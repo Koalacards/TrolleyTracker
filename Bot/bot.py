@@ -1,6 +1,8 @@
 import discord
 from discord.ext import commands
 
+from junglevines import JungleVines
+
 client = commands.Bot(command_prefix = 'koalabot ')
 
 @client.event
@@ -13,11 +15,16 @@ async def ping(ctx):
 
 @client.command()
 async def play(ctx, *, game):
+    gamelower = game.lower()
+    gamestripped = gamelower.strip()
+    gamefinal = gamestripped.replace(' ', '')
     response = ''
-    if game == 'junglevines':
+    if gamefinal == 'junglevines':
         response = 'booting up jungle vines'
-    elif game == 'iceslide':
+    elif gamefinal == 'iceslide':
         response = 'booting up ice slide'
+    elif gamefinal == 'tag':
+        response = 'booting up tag'
     else:
         response = 'invalid game selected. your options are junglevines and iceslide'
     await ctx.send(response)
