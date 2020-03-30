@@ -20,6 +20,8 @@ async def play(ctx, *, game):
     gamefinal = gamestripped.replace(' ', '')
     response = ''
     if gamefinal == 'junglevines':
+        newGame = JungleVines(ctx)
+        await newGame.createChannel()
         response = 'booting up jungle vines'
     elif gamefinal == 'iceslide':
         response = 'booting up ice slide'
