@@ -15,14 +15,16 @@ async def ping(ctx):
 
 @client.command()
 async def play(ctx, *, game):
+    if ctx.message.channel.id != 694015251825557606:
+        return
     gamelower = game.lower()
     gamestripped = gamelower.strip()
     gamefinal = gamestripped.replace(' ', '')
     response = ''
     if gamefinal == 'junglevines':
-        newGame = JungleVines(ctx)
+        newGame = JungleVines(ctx, client)
         await newGame.createChannel()
-        response = 'booting up jungle vines'
+        return
     elif gamefinal == 'iceslide':
         response = 'booting up ice slide'
     elif gamefinal == 'tag':
