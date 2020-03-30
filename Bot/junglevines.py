@@ -1,6 +1,5 @@
 import discord
 import random
-import asyncio
 
 junglenums = []
 
@@ -28,16 +27,17 @@ class JungleVines:
         hasGameStarted = False
         while hasGameStarted == False:
             message = await self.client.wait_for('message', timeout=300)
-            if message.content == 'start':
-                await newChannel.send('starting')
-                hasGameStarted = True
-                await self.game()
-            elif message.content == 'rules':
-                await newChannel.send(embed=self.rulesEmbed())
-            elif message.content == None:
-                await newChannel.send('Message has not been recieved, shutting down.')
-            else:
-                pass     
+            if message.channel.id == newChannel.id:
+                if message.content == 'start':
+                    await newChannel.send('starting')
+                    hasGameStarted = True
+                    await self.game()
+                elif message.content == 'rules':
+                    await newChannel.send(embed=self.rulesEmbed())
+                elif message.content == None:
+                    await newChannel.send('Message has not been recieved, shutting down.')
+                else:
+                    pass     
         pass
 
     async def game(self):
