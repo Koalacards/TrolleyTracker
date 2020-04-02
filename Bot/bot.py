@@ -16,7 +16,7 @@ async def ping(ctx):
 
 @client.command()
 async def play(ctx, *, game):
-    if ctx.message.channel.id != globalvars.COMMAND_CHANNEL_ID:
+    if ctx.message.channel.id not in globalvars.COMMAND_CHANNEL_IDS:
         return
     gamelower = game.lower()
     gamestripped = gamelower.strip()
