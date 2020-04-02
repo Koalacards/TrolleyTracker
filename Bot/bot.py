@@ -2,6 +2,7 @@ import discord
 from discord.ext import commands
 
 from junglevines import JungleVines
+import globalvars
 
 client = commands.Bot(command_prefix = 'koalabot ')
 
@@ -15,7 +16,7 @@ async def ping(ctx):
 
 @client.command()
 async def play(ctx, *, game):
-    if ctx.message.channel.id != 694015251825557606:
+    if ctx.message.channel.id != globalvars.COMMAND_CHANNEL_ID:
         return
     gamelower = game.lower()
     gamestripped = gamelower.strip()
@@ -32,4 +33,4 @@ async def play(ctx, *, game):
     else:
         response = 'invalid game selected. your options are junglevines and iceslide'
     await ctx.send(response)
-client.run('NjM1NTg2MjY0OTIxNDA3NTIy.Xl3Irw.JX2w5a-A4iS_dITjQTcj9fEs630')
+client.run(globalvars.RUN_ID)
