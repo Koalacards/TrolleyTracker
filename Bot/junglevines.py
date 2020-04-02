@@ -60,7 +60,7 @@ class JungleVines:
                     if message.content in options:
                         numSeconds = int(message.content)
                         if numSeconds > self.time - currenttime:
-                            channel.send('You do not have enough time to make this move!')
+                            await channel.send('You do not have enough time to make this move!')
                             numSeconds = 0
                         else:
                             moveDone = True
@@ -76,12 +76,12 @@ class JungleVines:
                 await channel.send('Something has gone terribly wrong.')
             
             #The probability that a successful jump will occur. the spider category is the probability
-            #that the user is not hit by a spider no matter what option they choose
+            #that the user hits a spider and is multiplied for every addition second the user takes
             probabilities = {
                 '1': 50,
                 '2': 70,
                 '3': 85,
-                'spider': 70
+                'spider': 20
             }
 
             hitBySpider = False
@@ -90,7 +90,7 @@ class JungleVines:
             #first check to see if the user got hit by a spider
             if currentvine == spider1 or currentvine == spider2:
                 roll = random.randint(1, 100)
-                if roll > probabilities.get('spider'):
+                if roll <= probabilities.get('spider') * numSeconds:
                     hitBySpider = True
                     currentvine = currentvine - 1
                     currenttime = currenttime + numSeconds
@@ -104,18 +104,17 @@ class JungleVines:
                 currenttime = currenttime + numSeconds
 
             #check for the end of the game
-            if currenttime == self.time:
-                await channel.send(embed=self.endingEmbed(currenttime, currentvine, False))
-                await asyncio.sleep(15)
-                await self.shutdown(channel)
-                return
-                    
             if currentvine == self.vines:
                 await channel.send(embed=self.endingEmbed(currenttime, currentvine, True))
                 await asyncio.sleep(15)
                 await self.shutdown(channel)
                 return
-            
+
+            if currenttime == self.time:
+                await channel.send(embed=self.endingEmbed(currenttime, currentvine, False))
+                await asyncio.sleep(15)
+                await self.shutdown(channel)
+                return
             
             #check to see if there is a spider on the next vine
             spider = False
@@ -152,7 +151,7 @@ class JungleVines:
     def rulesEmbed(self):
         embed = discord.Embed(
             title='Rules of Junglevines!',
-            description='You will have 30 seconds worth of moves to cross 8 vines!\n\nFor every move, you will have the option to take 1, 2, or 3 seconds!\n\nThe less amount of time you use, the lower chance you have of making the jump!\n\nThere will also be spiders on some vines, so be careful and best of luck!\n\nType "start" to begin your expidition!',
+            description='You will have 30 seconds worth of moves to cross 8 vines!\n\nFor every move, you will have the option to take 1, 2, or 3 seconds!\n\nThe less amount of time you use, the lower chance you have of making the jump!\n\nThere will also be spiders on some vines!\n\n When a spider is on your vine, the longer you take the bigger the change it will hit you!\n\nIf you get hit by a spider you will be sent one vine backwards!\n\nType "start" to begin your expidition!',
             colour=discord.Color.purple()
             )
         embed.set_footer(text='This channel will delete itself after 5 minutes if no action is taken!')
@@ -207,11 +206,11 @@ class JungleVines:
         color = None
         if win:
             titleStr = 'Congratulations!'
-            description = f'You made it through all 8 vines in {time} seconds. Way to go!'
+            description = f'You made it through all {self.vines} vines in {time} seconds. Way to go!'
             color = discord.Color.green()
         else:
             titleStr = 'Nice Try!'
-            description = f'Unfortunately, you only made it through {vine} vines in 30 seconds.\nBetter luck next time!'
+            description = f'Unfortunately, you only made it through {vine} vines in {self.time} seconds.\nBetter luck next time!'
             color = discord.Color.red()
         embed = discord.Embed(
             title=titleStr,
