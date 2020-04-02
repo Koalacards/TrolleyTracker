@@ -11,6 +11,10 @@ async def on_ready():
     print('KoalaBot v0.1')
 
 @client.command()
+async def clear(ctx, amount=20):
+    await ctx.channel.purge(limit=amount)
+
+@client.command()
 async def ping(ctx):
     await ctx.send('pong')
 
@@ -22,6 +26,7 @@ async def play(ctx, *, game):
     gamestripped = gamelower.strip()
     gamefinal = gamestripped.replace(' ', '')
     response = ''
+    await ctx.message.delete()
     if gamefinal == 'junglevines':
         newGame = JungleVines(ctx, client)
         await newGame.createChannel()

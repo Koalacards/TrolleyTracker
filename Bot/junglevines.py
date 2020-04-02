@@ -2,6 +2,8 @@ import discord
 import random
 import asyncio
 
+from timeout import Timeout
+
 junglenums = []
 
 class JungleVines:
@@ -12,6 +14,7 @@ class JungleVines:
         self.author = context.message.author
         self.number = self.getChannelNum()
         self.vines = 8
+        self.to = Timeout(300)
 
     async def createChannel(self):
         strnum = str(self.number)
@@ -26,27 +29,35 @@ class JungleVines:
         await newChannel.send(embed=self.startingEmbed())
         hasGameStarted = False
         while hasGameStarted == False:
-            message = await self.client.wait_for('message', timeout=300)
+            if self.to.isTimeUp():
+                await self.shutdown(newChannel)
+                return
+            message = None
+            try:
+                message = await self.client.wait_for('message', timeout=300)
+            except:
+                await self.shutdown(newChannel)
+                return
             if message.channel.id == newChannel.id:
                 if message.content == 'start':
+                    self.to.resetTimer()
                     hasGameStarted = True
                     await self.game(newChannel)
                 elif message.content == 'rules':
+                    self.to.resetTimer()
                     await newChannel.send(embed=self.rulesEmbed())
-                elif message.content == None:
-                    await newChannel.send('Message has not been recieved, shutting down.')
                 else:
                     pass     
         pass
 
-    async def game(self, channel):
+    async def game(self, newChannel):
         #set up variables
         spider1 = random.randint(2, 4)
         spider2 = random.randint(5, 7)
         currentvine = 1
         currenttime = 0
 
-        await channel.send(embed = self.gameEmbed(False, False, currentvine, currenttime, True, False))
+        await newChannel.send(embed = self.gameEmbed(False, False, currentvine, currenttime, True, False))
 
         while currentvine < 8 and currenttime < self.time:
             #the number of seconds the move is going to take: either 1, 2, or 3
@@ -55,17 +66,29 @@ class JungleVines:
             options = ['1', '2', '3']
             #gather the 1, 2, or 3 in the chat
             while moveDone == False:
-                message = await self.client.wait_for('message', timeout=300)
-                if message.channel.id == channel.id:
+                if self.to.isTimeUp():
+                    await self.shutdown(newChannel)
+                    return
+                message = None
+                try:
+                    message = await self.client.wait_for('message', timeout=300)
+                except:
+                    await self.shutdown(newChannel)
+                    return
+                if message.channel.id == newChannel.id:
                     if message.content in options:
                         numSeconds = int(message.content)
                         if numSeconds > self.time - currenttime:
-                            await channel.send('You do not have enough time to make this move!')
+                            await newChannel.send('You do not have enough time to make this move!')
                             numSeconds = 0
                         else:
                             moveDone = True
+                            self.to.resetTimer()
                     elif message.content == None:
-                        await channel.send('Message has not been recieved, shutting down.')
+                        embed = discord.Embed(title='Shutting down...', colour=discord.Color.red())
+                        await newChannel.send(embed=embed)
+                        await asyncio.sleep(2)
+                        self.shutdown(newChannel)
                     else:
                         pass
 
@@ -73,15 +96,15 @@ class JungleVines:
 
             #first check to see if numSeconds is legal
             if numSeconds != 1 and numSeconds != 2 and numSeconds != 3:
-                await channel.send('Something has gone terribly wrong.')
+                await newChannel.send('Something has gone terribly wrong.')
             
             #The probability that a successful jump will occur. the spider category is the probability
             #that the user hits a spider and is multiplied for every addition second the user takes
             probabilities = {
-                '1': 50,
-                '2': 70,
+                '1': 60,
+                '2': 75,
                 '3': 85,
-                'spider': 20
+                'spider': 15
             }
 
             hitBySpider = False
@@ -105,15 +128,15 @@ class JungleVines:
 
             #check for the end of the game
             if currentvine == self.vines:
-                await channel.send(embed=self.endingEmbed(currenttime, currentvine, True))
+                await newChannel.send(embed=self.endingEmbed(currenttime, currentvine, True))
                 await asyncio.sleep(15)
-                await self.shutdown(channel)
+                await self.shutdown(newChannel)
                 return
 
             if currenttime == self.time:
-                await channel.send(embed=self.endingEmbed(currenttime, currentvine, False))
+                await newChannel.send(embed=self.endingEmbed(currenttime, currentvine, False))
                 await asyncio.sleep(15)
-                await self.shutdown(channel)
+                await self.shutdown(newChannel)
                 return
             
             #check to see if there is a spider on the next vine
@@ -121,12 +144,15 @@ class JungleVines:
             if currentvine == spider1 or currentvine == spider2:
                 spider = True
             #if the game is not over, post the message for the next move then redo the loop
-            await channel.send(embed=self.gameEmbed(spider=spider, successfulJump=successfulJump, currentvine=currentvine, currenttime=currenttime, firstEmbed=False, spiderHit=hitBySpider))
+            await newChannel.send(embed=self.gameEmbed(spider=spider, successfulJump=successfulJump, currentvine=currentvine, currenttime=currenttime, firstEmbed=False, spiderHit=hitBySpider))
 
             #now the while loop starts again for the next turn
         pass
 
     async def shutdown(self, channel):
+        embed = discord.Embed(title='Shutting down...', colour=discord.Color.red())
+        await channel.send(embed=embed)
+        await asyncio.sleep(2)
         await channel.delete(reason='removing the game channel because the game is over or was forced to shutdown')
         pass
     
