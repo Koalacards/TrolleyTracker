@@ -3,8 +3,7 @@ import random
 import asyncio
 
 from timeout import Timeout
-
-junglenums = []
+import globalvars
 
 class JungleVines:
     def __init__(self, context, client):
@@ -19,10 +18,12 @@ class JungleVines:
     async def createChannel(self):
         strnum = str(self.number)
         zeroesstrnum = strnum.zfill(4)
-        channelname = 'junglevines-' + zeroesstrnum
+        channelRoleName = 'junglevines-' + zeroesstrnum
         guild = self.context.message.guild
+        role = await guild.create_role(name=channelRoleName)
+        await self.author.add_roles(role)
         newChannel = await guild.create_text_channel(
-            name=channelname,
+            name=channelRoleName,
             category=self.context.message.channel.category
         )
         await newChannel.send(f'Welcome to Jungle Vines, <@{self.author.id}>!')
@@ -30,27 +31,28 @@ class JungleVines:
         hasGameStarted = False
         while hasGameStarted == False:
             if self.to.isTimeUp():
-                await self.shutdown(newChannel)
-                return
+                await self.shutdown(newChannel, role)
             message = None
             try:
                 message = await self.client.wait_for('message', timeout=300)
             except:
-                await self.shutdown(newChannel)
-                return
+                await self.shutdown(newChannel, role)
             if message.channel.id == newChannel.id:
-                if message.content == 'start':
+                content = message.content.lower()
+                if content == 'start':
                     self.to.resetTimer()
                     hasGameStarted = True
-                    await self.game(newChannel)
-                elif message.content == 'rules':
+                    await self.game(newChannel, role)
+                elif content == 'rules':
                     self.to.resetTimer()
                     await newChannel.send(embed=self.rulesEmbed())
+                elif content == 'shutdown':
+                    await self.shutdown(newChannel, role)
                 else:
                     pass     
         pass
 
-    async def game(self, newChannel):
+    async def game(self, newChannel, role):
         #set up variables
         spider1 = random.randint(2, 4)
         spider2 = random.randint(5, 7)
@@ -67,16 +69,15 @@ class JungleVines:
             #gather the 1, 2, or 3 in the chat
             while moveDone == False:
                 if self.to.isTimeUp():
-                    await self.shutdown(newChannel)
-                    return
+                    await self.shutdown(newChannel, role)
                 message = None
                 try:
                     message = await self.client.wait_for('message', timeout=300)
                 except:
-                    await self.shutdown(newChannel)
-                    return
+                    await self.shutdown(newChannel, role)
                 if message.channel.id == newChannel.id:
-                    if message.content in options:
+                    content = message.content.lower()
+                    if content in options:
                         numSeconds = int(message.content)
                         if numSeconds > self.time - currenttime:
                             await newChannel.send('You do not have enough time to make this move!')
@@ -84,11 +85,8 @@ class JungleVines:
                         else:
                             moveDone = True
                             self.to.resetTimer()
-                    elif message.content == None:
-                        embed = discord.Embed(title='Shutting down...', colour=discord.Color.red())
-                        await newChannel.send(embed=embed)
-                        await asyncio.sleep(2)
-                        self.shutdown(newChannel)
+                    elif message.content == 'shutdown':
+                        await self.shutdown(newChannel, role)
                     else:
                         pass
 
@@ -130,13 +128,13 @@ class JungleVines:
             if currentvine == self.vines:
                 await newChannel.send(embed=self.endingEmbed(currenttime, currentvine, True))
                 await asyncio.sleep(15)
-                await self.shutdown(newChannel)
+                await self.shutdown(newChannel, role)
                 return
 
             if currenttime == self.time:
                 await newChannel.send(embed=self.endingEmbed(currenttime, currentvine, False))
                 await asyncio.sleep(15)
-                await self.shutdown(newChannel)
+                await self.shutdown(newChannel, role)
                 return
             
             #check to see if there is a spider on the next vine
@@ -149,24 +147,27 @@ class JungleVines:
             #now the while loop starts again for the next turn
         pass
 
-    async def shutdown(self, channel):
+    async def shutdown(self, channel, role):
+        #delete the role 
+        await role.delete()
         embed = discord.Embed(title='Shutting down...', colour=discord.Color.red())
         await channel.send(embed=embed)
         await asyncio.sleep(2)
         await channel.delete(reason='removing the game channel because the game is over or was forced to shutdown')
-        pass
+        globalvars.JUNGLE_NUMS.remove(self.number)
+        return
     
     def getChannelNum(self):
         num = random.randint(1, 9999)
-        while (num in junglenums):
+        while (num in globalvars.JUNGLE_NUMS):
             num = random.randint(1, 9999)
-        junglenums.append(num)
+        globalvars.JUNGLE_NUMS.append(num)
         return num
 
     def startingEmbed(self):
         embed = discord.Embed(
             title='Welcome to Jungle Vines!',
-            description='In order to start the game, type "start" in the chat!\n\nIn order to view rules, type "rules" in the chat!',
+            description='In order to start the game, type "start" in the chat!\n\nIn order to view rules, type "rules" in the chat!\n\nIf you want to leave, type "shutdown in the chat!',
             colour=discord.Color.green()
             )
         embed.set_footer(text='This channel will delete itself after 5 minutes if no action is taken!')
@@ -220,10 +221,10 @@ class JungleVines:
         embed.add_field(name='Vine', value=f'{currentvine}/{self.vines}', inline=True)
         if spider:
             embed.add_field(name='Be careful!', value='There is a spider on the vine!', inline=False)
-        embed.add_field(name='Keep going!', value='Type in "1", "2", or "3" to enter your next jump time!', inline=False)
-        embed.add_field(name='1', value='A short but risky jump!', inline=True)
-        embed.add_field(name='2', value='A medium-risk jump!', inline=True)
-        embed.add_field(name='3', value='A long but very low-risk jump!', inline=True)
+        embed.add_field(name='Keep going!', value='If you would like to exit the game, put "shutdown" in the chat!', inline=False)
+        embed.add_field(name='Type "1":', value='A short but risky jump!', inline=True)
+        embed.add_field(name='Type "2":', value='A medium-risk jump!', inline=True)
+        embed.add_field(name='Type "3"', value='A long but very low-risk jump!', inline=True)
         return embed
 
     def endingEmbed(self, time, vine, win:bool):
