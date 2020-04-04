@@ -29,9 +29,10 @@ async def play(ctx, *, game):
     await ctx.message.delete()
     if gamefinal == 'junglevines':
         for role in ctx.message.author.roles:
-            if 'junglevines' in str(role):
-                await ctx.send(f'Sorry <@{ctx.message.author.id}>, you are already in an active game of junglevines! You must complete that game to create another one.')
-                return
+            for gameStr in globalvars.GAMES_LIST:
+                if gameStr in str(role):
+                    await ctx.send(f'Sorry <@{ctx.message.author.id}>, you are already in an active minigame channel! You must complete that game to be a part of another one.')
+                    return
         newGame = JungleVines(ctx, client)
         await newGame.createChannel()
         return

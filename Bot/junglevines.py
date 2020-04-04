@@ -16,18 +16,42 @@ class JungleVines:
         self.to = Timeout(300)
 
     async def createChannel(self):
+
+        #Creating the name using junglevines-[a number with 4 digits], ex. junglevines-0123
         strnum = str(self.number)
         zeroesstrnum = strnum.zfill(4)
         channelRoleName = 'junglevines-' + zeroesstrnum
+
         guild = self.context.message.guild
+
+        #First, creating the role that the user will have (role is really only so that they cant
+        # make another game when they have it)
         role = await guild.create_role(name=channelRoleName)
         await self.author.add_roles(role)
+
+        #Next, the channel is made in the category that they sent the message in
         newChannel = await guild.create_text_channel(
             name=channelRoleName,
             category=self.context.message.channel.category
         )
+
+        #Then, permissions are set so that the created role can send messages in the channel
+        #The rest can read the messages if they want to to see how the game is going
+        #for role in guild.roles:
+         #   if str(role).lower() == channelRoleName or str(role).lower() in globalvars.ALLOWED_EXTRA_ROLES:
+          #      await newChannel.set_permissions(role, read_messages=True, send_messages=True)
+           # else:
+            #    await newChannel.set_permissions(role, read_messages=True, send_messages=False)
+
+
+        #Send first message with a ping to direct the user to the channel
         await newChannel.send(f'Welcome to Jungle Vines, <@{self.author.id}>!')
+
+        #Send the first embed, describing to type 'rules' or 'start'
         await newChannel.send(embed=self.startingEmbed())
+
+        #Waits for a useful message (either 'rules', 'start', or 'shutdown') and if 
+        #the user does not give one in 5 minutes then the channel is shutdown
         hasGameStarted = False
         while hasGameStarted == False:
             if self.to.isTimeUp():
@@ -37,7 +61,7 @@ class JungleVines:
                 message = await self.client.wait_for('message', timeout=300)
             except:
                 await self.shutdown(newChannel, role)
-            if message.channel.id == newChannel.id:
+            if message.channel.id == newChannel.id and message.author == self.author:
                 content = message.content.lower()
                 if content == 'start':
                     self.to.resetTimer()
@@ -64,9 +88,12 @@ class JungleVines:
         while currentvine < 8 and currenttime < self.time:
             #the number of seconds the move is going to take: either 1, 2, or 3
             numSeconds = 0
+
+            #checks for a valid input (either one of the options below or 'shutdown')
+            #If there is not a valid input after 5 minutes the channel is shut down
             moveDone = False
             options = ['1', '2', '3']
-            #gather the 1, 2, or 3 in the chat
+            
             while moveDone == False:
                 if self.to.isTimeUp():
                     await self.shutdown(newChannel, role)
@@ -75,7 +102,7 @@ class JungleVines:
                     message = await self.client.wait_for('message', timeout=300)
                 except:
                     await self.shutdown(newChannel, role)
-                if message.channel.id == newChannel.id:
+                if message.channel.id == newChannel.id and message.author == self.author:
                     content = message.content.lower()
                     if content in options:
                         numSeconds = int(message.content)
@@ -148,7 +175,6 @@ class JungleVines:
         pass
 
     async def shutdown(self, channel, role):
-        #delete the role 
         await role.delete()
         embed = discord.Embed(title='Shutting down...', colour=discord.Color.red())
         await channel.send(embed=embed)
