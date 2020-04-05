@@ -5,14 +5,15 @@ import asyncio
 from timeout import Timeout
 import globalvars
 
+
 class JungleVines:
     def __init__(self, context, client):
-        self.time = 30
+        self.time = 50
         self.context = context
         self.client = client
         self.author = context.message.author
         self.number = self.getChannelNum()
-        self.vines = 8
+        self.vines = 15
         self.to = Timeout(300)
         self.gameOver = False
 
@@ -82,14 +83,26 @@ class JungleVines:
     async def game(self, newChannel, role):
         #set up variables
         spider1 = random.randint(2, 4)
-        spider2 = random.randint(5, 7)
+        bat1 = random.randint(5, 8)
+        spider2 = random.randint(9, 11)
+        bat2 = random.randint(12, 14)
         currentvine = 1
         currenttime = 0
+        totalbananas = 0
+
+        bananas = {}
+        for x in range(1, self.vines):
+            bananas[x] = random.randint(1, 3)
+
+        batHit = {
+           bat1:random.randint(1, 3),
+           bat2:random.randint(1, 3) 
+        }
 
         if self.gameOver == False:
-            await newChannel.send(embed = self.gameEmbed(False, False, currentvine, currenttime, True, False))
+            await newChannel.send(embed = self.gameEmbed(False, False, currentvine, currenttime, True, False, False, False, totalbananas, False))
 
-        while currentvine < 8 and currenttime < self.time and self.gameOver == False:
+        while currentvine < self.vines and currenttime < self.time and self.gameOver == False:
             #the number of seconds the move is going to take: either 1, 2, or 3
             numSeconds = 0
 
@@ -128,8 +141,11 @@ class JungleVines:
             # THE ACTUAL LOGIC BEHIND THE GAME
 
             #first check to see if numSeconds is legal
-            if numSeconds != 1 and numSeconds != 2 and numSeconds != 3:
+            if numSeconds != 1 and numSeconds != 2 and numSeconds != 3 and self.gameOver == False:
                 await newChannel.send('Something has gone terribly wrong.')
+            elif self.gameOver == True:
+                await asyncio.sleep(15)
+                return
             
             #The probability that a successful jump will occur. the spider category is the probability
             #that the user hits a spider and is multiplied for every addition second the user takes
@@ -142,17 +158,33 @@ class JungleVines:
 
             hitBySpider = False
             successfulJump = False
+            hitByBat = False
+            gotBanana = False
 
-            #first check to see if the user got hit by a spider
+            #check to see if the user got a banana
+            if bananas[currentvine] == numSeconds:
+                totalbananas = totalbananas + 1
+                bananas[currentvine] = -1
+                gotBanana = True
+
+            #check to see if the user got hit by a spider
             if currentvine == spider1 or currentvine == spider2:
                 roll = random.randint(1, 100)
                 if roll <= probabilities.get('spider') * numSeconds:
                     hitBySpider = True
                     currentvine = currentvine - 1
                     currenttime = currenttime + numSeconds
+
+
+            #check to see if the user got hit by a bat
+            if currentvine == bat1 or currentvine == bat2:
+                if numSeconds == batHit.get(currentvine):
+                    hitByBat = True
+                    currenttime = currenttime + numSeconds
+
                 
             #now factor in their rolls (unless they got hit by a spider, then the turn is over)
-            if hitBySpider == False:
+            if hitBySpider == False and hitByBat == False:
                 roll = random.randint(1, 100)
                 if roll <= probabilities.get(str(numSeconds)):
                     currentvine = currentvine + 1
@@ -161,14 +193,14 @@ class JungleVines:
 
             #check for the end of the game
             if currentvine == self.vines:
-                await newChannel.send(embed=self.endingEmbed(currenttime, currentvine, True))
+                await newChannel.send(embed=self.endingEmbed(currenttime, currentvine, totalbananas, True))
                 await asyncio.sleep(15)
                 self.gameOver = True
                 await self.shutdown(newChannel, role)
                 return
 
             if currenttime == self.time:
-                await newChannel.send(embed=self.endingEmbed(currenttime, currentvine, False))
+                await newChannel.send(embed=self.endingEmbed(currenttime, currentvine, totalbananas, False))
                 await asyncio.sleep(15)
                 self.gameOver = True
                 await self.shutdown(newChannel, role)
@@ -178,8 +210,13 @@ class JungleVines:
             spider = False
             if currentvine == spider1 or currentvine == spider2:
                 spider = True
+
+            #check to see if there is a bat coming onto the next vine
+            bat=False
+            if currentvine == bat1 or currentvine == bat2:
+                bat=True
             #if the game is not over, post the message for the next move then redo the loop
-            await newChannel.send(embed=self.gameEmbed(spider=spider, successfulJump=successfulJump, currentvine=currentvine, currenttime=currenttime, firstEmbed=False, spiderHit=hitBySpider))
+            await newChannel.send(embed=self.gameEmbed(spider=spider, successfulJump=successfulJump, currentvine=currentvine, currenttime=currenttime, firstEmbed=False, spiderHit=hitBySpider, batHit = hitByBat, gotBanana=gotBanana, bananas=totalbananas, batNow = bat))
 
             #now the while loop starts again for the next turn
         pass
@@ -212,24 +249,26 @@ class JungleVines:
             )
         embed.set_footer(text='This channel will delete itself after 5 minutes if no action is taken!')
         embed.set_author(name=self.author)
-        embed.set_image(url='https://vignette.wikia.nocookie.net/toontown/images/f/f0/Jungle_Vines.png/revision/latest/scale-to-width-down/340?cb=20130617235558')
+        #embed.set_image(url='https://vignette.wikia.nocookie.net/toontown/images/f/f0/Jungle_Vines.png/revision/latest/scale-to-width-down/340?cb=20130617235558')
         return embed
 
     #The embed for the rules page
     def rulesEmbed(self):
         embed = discord.Embed(
             title='Rules of Junglevines!',
-            description='You will have 30 seconds worth of moves to cross 8 vines!\n\nFor every move, you will have the option to take 1, 2, or 3 seconds!\n\nThe less amount of time you use, the lower chance you have of making the jump!\n\nThere will also be spiders on some vines!\n\n When a spider is on your vine, the longer you take the bigger the change it will hit you!\n\nIf you get hit by a spider you will be sent one vine backwards!\n\nType "start" to begin your expidition!',
+            description=f'You will have {self.time} seconds worth of moves to cross {self.vines} vines!\n\nFor every move, you will have the option to take 1, 2, or 3 seconds!\n\nThe less amount of time you use, the lower chance you have of making the jump!\n\nThere will also be spiders and bats to avoid!\n\nType "start" to begin your expidition!',
             colour=discord.Color.purple()
             )
         embed.set_footer(text='This channel will delete itself after 5 minutes if no action is taken!')
         embed.set_author(name=self.author)
-        embed.set_image(url='https://vignette.wikia.nocookie.net/toontown/images/f/f0/Jungle_Vines.png/revision/latest/scale-to-width-down/340?cb=20130617235558')
+        #embed.set_image(url='https://vignette.wikia.nocookie.net/toontown/images/f/f0/Jungle_Vines.png/revision/latest/scale-to-width-down/340?cb=20130617235558')
         return embed
 
     #The embed for each message the bot says in the game. This embed is impacted by what has happened
     #in the game.
-    def gameEmbed(self, spider, successfulJump, currentvine, currenttime, firstEmbed, spiderHit):
+
+    #PS:This entire method is hot garbage, talk to @Koalacards#4618 if you need an explanation on something in here
+    def gameEmbed(self, spider, successfulJump, currentvine, currenttime, firstEmbed, spiderHit, batHit, gotBanana, bananas, batNow):
         successtitles = ['Awesome!', 'Nice Jump!', 'Woohoo!', 'Way To Go!']
         failtitles = ['Drat!', 'So Close!', 'Better Luck Next Time!', 'Bummer!']
         titleStr = ''
@@ -246,7 +285,11 @@ class JungleVines:
                 description = 'Congratulations on a great jump!'
             elif spiderHit:
                 titleStr = failtitles[random.randint(0, len(failtitles) - 1)]
-                description = 'A spider hit you off the vine and sent you one vine backwards!'
+                description = 'The spider hit you off the vine and sent you one vine backwards!'
+                color=discord.Color.red()
+            elif batHit:
+                titleStr = failtitles[random.randint(0, len(failtitles) - 1)]
+                description = 'The bat hit you off the vine!'
                 color=discord.Color.red()
             else: 
                 titleStr = failtitles[random.randint(0, len(failtitles) - 1)]
@@ -262,26 +305,37 @@ class JungleVines:
         embed.set_author(name=self.author)
         embed.add_field(name='Time', value=f'{self.time - currenttime}/{self.time}', inline=True)
         embed.add_field(name='Vine', value=f'{currentvine}/{self.vines}', inline=True)
+        embed.add_field(name='Total Bananas', value=f'{bananas}', inline=True)
+        if gotBanana:
+            embed.add_field(name='Congratulations!', value='You got a banana!', inline=False)
+            if spider == False and batNow == False:
+                embed.set_thumbnail(url='https://cdn.discordapp.com/attachments/635584721232986124/696193848430297118/unknown.png')
         if spider:
-            embed.add_field(name='Be careful!', value='There is a spider on the vine!', inline=False)
+            embed.add_field(name='There is a spider on the vine!', value='The longer you stay on the vine, the more likely you are to get hit off!', inline=False)
+            embed.set_thumbnail(url='https://cdn.discordapp.com/attachments/635584721232986124/696134759578992731/unknown.png')
+        if batNow:
+            embed.add_field(name='There is a bat incoming!', value='If you pick the wrong length of time, the bat will knock you off!', inline=False)
+            embed.set_thumbnail(url='https://cdn.discordapp.com/attachments/635584721232986124/696193551616442408/unknown.png')
         embed.add_field(name='Keep going!', value='If you would like to exit the game, put "shutdown" in the chat!', inline=False)
         embed.add_field(name='Type "1":', value='A short but risky jump!', inline=True)
         embed.add_field(name='Type "2":', value='A medium-risk jump!', inline=True)
         embed.add_field(name='Type "3"', value='A long but very low-risk jump!', inline=True)
+        
+        #TODO: add images depending on what happens?
         return embed
 
     #The embed for when the game is over, either displaying a win or lose message
-    def endingEmbed(self, time, vine, win:bool):
+    def endingEmbed(self, time, vine, bananas, win:bool):
         titleStr = ''
         description = ''
         color = None
         if win:
             titleStr = 'Congratulations!'
-            description = f'You made it through all {self.vines} vines in {time} seconds. Way to go!'
+            description = f'You made it through all {self.vines} vines in {time} seconds. Way to go!\n\nYou also collected {bananas} bananas.'
             color = discord.Color.green()
         else:
             titleStr = 'Nice Try!'
-            description = f'Unfortunately, you only made it through {vine} vines in {self.time} seconds.\nBetter luck next time!'
+            description = f'Unfortunately, you only made it through {vine} vines in {self.time} seconds.\nBetter luck next time!\n\nYou also collected {bananas} bananas.'
             color = discord.Color.red()
         embed = discord.Embed(
             title=titleStr,

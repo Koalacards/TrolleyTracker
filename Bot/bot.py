@@ -8,7 +8,7 @@ client = commands.Bot(command_prefix = 'koalabot ')
 
 @client.event
 async def on_ready():
-    print('KoalaBot v0.1')
+    print('KoalaBot v0.2')
 
 @client.command()
 async def clear(ctx, amount=20):
