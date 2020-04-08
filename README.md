@@ -1,5 +1,5 @@
-# MinigameBot
-Welcome to MinigameBot, which will (hopefully) eventually be a
+# TrolleyTracker
+Welcome to TrolleyTracker, which will (maybe) eventually be a
 bot that will play minigames on the TTR discord.
 
 To run the bot, run the bot.py file in any python environment and as long

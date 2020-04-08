@@ -2,21 +2,34 @@ import discord
 from discord.ext import commands
 
 from junglevines import JungleVines
+from tag import Tag
 import globalvars
 
-client = commands.Bot(command_prefix = 'koalabot ')
+client = commands.Bot(command_prefix = globalvars.PREFIX)
 
 @client.event
 async def on_ready():
-    print('KoalaBot v0.2')
+    print('TrolleyTracker v0.2.1')
 
 @client.command()
 async def clear(ctx, amount=20):
-    await ctx.channel.purge(limit=amount)
+    if str(ctx.message.author) == 'Koalacards#4618':
+        await ctx.channel.purge(limit=amount)
 
 @client.command()
-async def ping(ctx):
-    await ctx.send('pong')
+async def reset(ctx):
+    await ctx.message.delete()
+    if str(ctx.message.author) == 'Koalacards#4618':
+        guild = ctx.message.guild
+        for role in guild.roles:
+            for gameStr in globalvars.GAMES_LIST:
+                if gameStr in str(role):
+                    await role.delete()
+        
+        for channel in ctx.message.channel.category.channels:
+            for gameStr in globalvars.GAMES_LIST:
+                if gameStr in channel.name:
+                    await channel.delete()
 
 @client.command()
 async def play(ctx, *, game):
@@ -28,19 +41,28 @@ async def play(ctx, *, game):
     response = ''
     await ctx.message.delete()
     if gamefinal == 'junglevines':
-        for role in ctx.message.author.roles:
-            for gameStr in globalvars.GAMES_LIST:
-                if gameStr in str(role):
-                    await ctx.send(f'Sorry <@{ctx.message.author.id}>, you are already in an active minigame channel! You must complete that game to be a part of another one.')
-                    return
+        if checkUserEligible(ctx.message.author) == False:
+            await ctx.send(f'Sorry <@{ctx.message.author.id}>, you are already in an active minigame channel! You must complete that game to be a part of another one.')
+            return
         newGame = JungleVines(ctx, client)
         await newGame.createChannel()
         return
     elif gamefinal == 'iceslide':
-        response = 'booting up ice slide'
+        await ctx.send('Ice slide is still in development.')
     elif gamefinal == 'tag':
-        response = 'booting up tag'
+        if checkUserEligible(ctx.message.author) == False:
+            await ctx.send(f'Sorry <@{ctx.message.author.id}>, you are already in an active minigame channel! You must complete that game to be a part of another one.')
+            return
+        newGame = Tag(ctx, client)
+        await newGame.createChannel()
     else:
-        response = 'invalid game selected. your options are junglevines and iceslide'
-    await ctx.send(response)
+        await ctx.send(f'Invalid game selected. Enter "{globalvars.PREFIX}help" for help.')
+
+#Checks to see if a user is eligible to be a part of a 
+def checkUserEligible(member):
+    for role in member.roles:
+        for gameStr in globalvars.GAMES_LIST:
+            if gameStr in str(role):
+                return False
+    return True
 client.run(globalvars.RUN_ID)

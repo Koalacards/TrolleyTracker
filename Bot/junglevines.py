@@ -39,13 +39,12 @@ class JungleVines:
 
         #Then, permissions are set so that the created role can send messages in the channel
         #The rest can read the messages if they want to to see how the game is going
-        for member in guild.members:
-            if member != self.author:
-                await newChannel.set_permissions(member, read_messages=True, send_messages=False)          
+        await newChannel.set_permissions(guild.default_role, read_messages = True, send_messages = False)
+        await newChannel.set_permissions(self.author, read_messages = True, send_messages = True)
 
 
         #Send first message with a ping to direct the user to the channel
-        await newChannel.send(f'Welcome to Jungle Vines, <@{self.author.id}>!')
+        await newChannel.send(f'Welcome to Jungle Vines, {self.author.mention}!')
 
         #Send the first embed, describing to type 'rules' or 'start'
         await newChannel.send(embed=self.startingEmbed())
@@ -71,7 +70,6 @@ class JungleVines:
                     hasGameStarted = True
                     await self.game(newChannel, role)
                 elif content == 'rules':
-                    self.to.resetTimer()
                     await newChannel.send(embed=self.rulesEmbed())
                 elif content == 'shutdown':
                     self.gameOver = True
@@ -80,6 +78,7 @@ class JungleVines:
                     pass     
         pass
 
+    #All of the main game code for junglevines
     async def game(self, newChannel, role):
         #set up variables
         spider1 = random.randint(2, 4)
@@ -247,7 +246,7 @@ class JungleVines:
             description='In order to start the game, type "start" in the chat!\n\nIn order to view rules, type "rules" in the chat!\n\nIf you want to leave, type "shutdown in the chat!',
             colour=discord.Color.green()
             )
-        embed.set_footer(text='This channel will delete itself after 5 minutes if no action is taken!')
+        embed.set_footer(text='This channel will delete itself after 5 minutes if the game has not started.')
         embed.set_author(name=self.author)
         #embed.set_image(url='https://vignette.wikia.nocookie.net/toontown/images/f/f0/Jungle_Vines.png/revision/latest/scale-to-width-down/340?cb=20130617235558')
         return embed
@@ -312,14 +311,14 @@ class JungleVines:
                 embed.set_thumbnail(url='https://cdn.discordapp.com/attachments/635584721232986124/696193848430297118/unknown.png')
         if spider:
             embed.add_field(name='There is a spider on the vine!', value='The longer you stay on the vine, the more likely you are to get hit off!', inline=False)
-            embed.set_thumbnail(url='https://cdn.discordapp.com/attachments/635584721232986124/696134759578992731/unknown.png')
+            embed.set_thumbnail(url='https://cdn.discordapp.com/attachments/697203113425240114/697204990120558673/unknown.png')
         if batNow:
             embed.add_field(name='There is a bat incoming!', value='If you pick the wrong length of time, the bat will knock you off!', inline=False)
-            embed.set_thumbnail(url='https://cdn.discordapp.com/attachments/635584721232986124/696193551616442408/unknown.png')
+            embed.set_thumbnail(url='https://cdn.discordapp.com/attachments/697203113425240114/697204245782331462/unknown.png')
         embed.add_field(name='Keep going!', value='If you would like to exit the game, put "shutdown" in the chat!', inline=False)
-        embed.add_field(name='Type "1":', value='A short but risky jump!', inline=True)
-        embed.add_field(name='Type "2":', value='A medium-risk jump!', inline=True)
-        embed.add_field(name='Type "3"', value='A long but very low-risk jump!', inline=True)
+        embed.add_field(name='Enter "1":', value='A short but risky jump!', inline=True)
+        embed.add_field(name='Enter "2":', value='A medium-risk jump!', inline=True)
+        embed.add_field(name='Enter "3":', value='A long but very low-risk jump!', inline=True)
         
         #TODO: add images depending on what happens?
         return embed
