@@ -5,78 +5,21 @@ import asyncio
 from timeout import Timeout
 import globalvars
 
-
+#Trolley game of JungleVines
+#-Players: 1
+#-Requires DM's to be open: no
+#-Length of game: short
+#-Description: Fun game where you decide to make 1, 2, or 3 second jumps and get across
+#a number of vines in a certain period of time
 class JungleVines:
     def __init__(self, context, client):
         self.time = 50
         self.context = context
         self.client = client
         self.author = context.message.author
-        self.number = self.getChannelNum()
         self.vines = 15
+        self.number = 0
         self.to = Timeout(300)
-        self.gameOver = False
-
-    async def createChannel(self):
-
-        #Creating the name using junglevines-[a number with 4 digits], ex. junglevines-0123
-        strnum = str(self.number)
-        zeroesstrnum = strnum.zfill(4)
-        channelRoleName = 'junglevines-' + zeroesstrnum
-
-        guild = self.context.message.guild
-
-        #First, creating the role that the user will have (role is really only so that they cant
-        # make another game when they have it)
-        role = await guild.create_role(name=channelRoleName)
-        await self.author.add_roles(role)
-
-        #Next, the channel is made in the category that they sent the message in
-        newChannel = await guild.create_text_channel(
-            name=channelRoleName,
-            category=self.context.message.channel.category
-        )
-
-        #Then, permissions are set so that the created role can send messages in the channel
-        #The rest can read the messages if they want to to see how the game is going
-        await newChannel.set_permissions(guild.default_role, read_messages = True, send_messages = False)
-        await newChannel.set_permissions(self.author, read_messages = True, send_messages = True)
-
-
-        #Send first message with a ping to direct the user to the channel
-        await newChannel.send(f'Welcome to Jungle Vines, {self.author.mention}!')
-
-        #Send the first embed, describing to type 'rules' or 'start'
-        await newChannel.send(embed=self.startingEmbed())
-
-        #Waits for a useful message (either 'rules', 'start', or 'shutdown') and if 
-        #the user does not give one in 5 minutes then the channel is shutdown
-        hasGameStarted = False
-        while hasGameStarted == False and self.gameOver == False:
-            if self.to.isTimeUp():
-                self.gameOver = True
-                await self.shutdown(newChannel, role)
-            message = None
-            try:
-                if self.gameOver == False:
-                    message = await self.client.wait_for('message', timeout=300)
-            except:
-                self.gameOver = True
-                await self.shutdown(newChannel, role)
-            if message.channel.id == newChannel.id and message.author == self.author:
-                content = message.content.lower()
-                if content == 'start':
-                    self.to.resetTimer()
-                    hasGameStarted = True
-                    await self.game(newChannel, role)
-                elif content == 'rules':
-                    await newChannel.send(embed=self.rulesEmbed())
-                elif content == 'shutdown':
-                    self.gameOver = True
-                    await self.shutdown(newChannel, role)
-                else:
-                    pass     
-        pass
 
     #All of the main game code for junglevines
     async def game(self, newChannel, role):
@@ -98,10 +41,9 @@ class JungleVines:
            bat2:random.randint(1, 3) 
         }
 
-        if self.gameOver == False:
-            await newChannel.send(embed = self.gameEmbed(False, False, currentvine, currenttime, True, False, False, False, totalbananas, False))
+        await newChannel.send(embed = self.gameEmbed(False, False, currentvine, currenttime, True, False, False, False, totalbananas, False))
 
-        while currentvine < self.vines and currenttime < self.time and self.gameOver == False:
+        while currentvine < self.vines and currenttime < self.time:
             #the number of seconds the move is going to take: either 1, 2, or 3
             numSeconds = 0
 
@@ -110,17 +52,16 @@ class JungleVines:
             moveDone = False
             options = ['1', '2', '3']
             
-            while moveDone == False and self.gameOver == False:
+            while moveDone == False:
                 if self.to.isTimeUp():
-                    self.gameOver = True
                     await self.shutdown(newChannel, role)
+                    return
                 message = None
                 try:
-                    if self.gameOver == False:
-                        message = await self.client.wait_for('message', timeout=300)
+                    message = await self.client.wait_for('message', timeout=300)
                 except:
-                    self.gameOver = True
                     await self.shutdown(newChannel, role)
+                    return
                 if message.channel.id == newChannel.id and message.author == self.author:
                     content = message.content.lower()
                     if content in options:
@@ -132,17 +73,16 @@ class JungleVines:
                             moveDone = True
                             self.to.resetTimer()
                     elif message.content == 'shutdown':
-                        self.gameOver = True
                         await self.shutdown(newChannel, role)
+                        return
                     else:
                         pass
 
             # THE ACTUAL LOGIC BEHIND THE GAME
 
             #first check to see if numSeconds is legal
-            if numSeconds != 1 and numSeconds != 2 and numSeconds != 3 and self.gameOver == False:
+            if numSeconds != 1 and numSeconds != 2 and numSeconds != 3:
                 await newChannel.send('Something has gone terribly wrong.')
-            elif self.gameOver == True:
                 await asyncio.sleep(15)
                 return
             
@@ -194,14 +134,12 @@ class JungleVines:
             if currentvine == self.vines:
                 await newChannel.send(embed=self.endingEmbed(currenttime, currentvine, totalbananas, True))
                 await asyncio.sleep(15)
-                self.gameOver = True
                 await self.shutdown(newChannel, role)
                 return
 
             if currenttime == self.time:
                 await newChannel.send(embed=self.endingEmbed(currenttime, currentvine, totalbananas, False))
                 await asyncio.sleep(15)
-                self.gameOver = True
                 await self.shutdown(newChannel, role)
                 return
             
@@ -230,14 +168,6 @@ class JungleVines:
         await channel.delete(reason='removing the game channel because the game is over or was forced to shutdown')
         globalvars.JUNGLE_NUMS.remove(self.number)
         return
-    
-    #Gets the random number for the channel
-    def getChannelNum(self):
-        num = random.randint(1, 9999)
-        while (num in globalvars.JUNGLE_NUMS):
-            num = random.randint(1, 9999)
-        globalvars.JUNGLE_NUMS.append(num)
-        return num
 
     #The first "welcome to junglevines!" embed information
     def startingEmbed(self):
@@ -247,7 +177,7 @@ class JungleVines:
             colour=discord.Color.green()
             )
         embed.set_footer(text='This channel will delete itself after 5 minutes if the game has not started.')
-        embed.set_author(name=self.author)
+        embed.set_author(name=self.author.display_name)
         #embed.set_image(url='https://vignette.wikia.nocookie.net/toontown/images/f/f0/Jungle_Vines.png/revision/latest/scale-to-width-down/340?cb=20130617235558')
         return embed
 
@@ -259,8 +189,6 @@ class JungleVines:
             colour=discord.Color.purple()
             )
         embed.set_footer(text='This channel will delete itself after 5 minutes if no action is taken!')
-        embed.set_author(name=self.author)
-        #embed.set_image(url='https://vignette.wikia.nocookie.net/toontown/images/f/f0/Jungle_Vines.png/revision/latest/scale-to-width-down/340?cb=20130617235558')
         return embed
 
     #The embed for each message the bot says in the game. This embed is impacted by what has happened
@@ -301,7 +229,7 @@ class JungleVines:
             colour=color
             )
         embed.set_footer(text='This channel will delete itself after 5 minutes if no action is taken!')
-        embed.set_author(name=self.author)
+        embed.set_author(name=self.author.display_name)
         embed.add_field(name='Time', value=f'{self.time - currenttime}/{self.time}', inline=True)
         embed.add_field(name='Vine', value=f'{currentvine}/{self.vines}', inline=True)
         embed.add_field(name='Total Bananas', value=f'{bananas}', inline=True)
@@ -344,3 +272,7 @@ class JungleVines:
         embed.set_footer(text='This channel will delete itself in 15 seconds.')
         return embed
 
+    def updateVars(self, players, timeout, number):
+        self.author = players[0]
+        self.to = timeout
+        self.number = number

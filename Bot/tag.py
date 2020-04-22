@@ -5,149 +5,61 @@ import asyncio
 from timeout import Timeout
 import globalvars
 
+#Trolley game of Tag
+#-Players: 2
+#-Requires DM's to be open: yes
+#-Length of game: short
+#-Description: Fun game with a friend where you guess a number in a range, and if both of you
+#guess the same number, the other person becomes IT. The range gets smaller every turn that passes
+#where the two people guess different numbers, and the smaller the range, the more icecream cones
+#the player that is not IT gets.
 class Tag:
     def __init__(self, context, client):
         self.turns = 20
+        self.maxRange = 20
         self.context = context
         self.client = client
         self.players = [context.message.author]
-        self.number = self.getChannelNum()
+        self.number = 0
         self.to = Timeout(300)
-        self.gameOver = False
-        self.numPlayers = 1
-
-    #Creates the channel and gets ready to start the game
-    async def createChannel(self):
-
-        #Creating the name using tag-[a number with 4 digits], ex. tag- 0012
-        strnum = str(self.number)
-        zeroesstrnum = strnum.zfill(4)
-        channelRoleName = 'tag-' + zeroesstrnum
-
-        guild = self.context.message.guild
-
-        author = self.players[0]
-
-        #First, creating the role that the user will have (role is really only so that they cant
-        # make another game when they have it)
-        role = await guild.create_role(name=channelRoleName)
-        await author.add_roles(role)
-
-        #Next, the channel is made in the category that they sent the message in
-        newChannel = await guild.create_text_channel(
-            name=channelRoleName,
-            category=self.context.message.channel.category
-        )
-
-        #Then, permissions are set so that the created role can send messages in the channel
-        #The rest can read the messages if they want to to see how the game is going
-        await newChannel.set_permissions(guild.default_role, read_messages = True, send_messages = False)
-        await newChannel.set_permissions(author, read_messages = True, send_messages = True)
-
-        #Send first message with a ping to direct the user to the channel
-        await newChannel.send(f'Welcome to Tag, {author.mention}!')  
-
-        #Send message informing the user they need to invite new players
-        if self.numPlayers != 2:
-            embed = discord.Embed(
-                title=str(author),
-                description=f'Tag is a two-player game, so you will need to invite someone to this channel! To do that, enter "{globalvars.PREFIX}invite [USER]" to add the user to the channel.\n\nIf you need to leave, enter "shutdown".',
-                colour=discord.Color.purple()
-            )
-            embed.set_footer(text='This channel will delete itself after 5 minutes if nobody has been invited.')
-            await newChannel.send(embed=embed)       
-
-        #Wait until the user invites a player or 5 minutes have passed
-        while self.numPlayers != 2:
-            if self.to.isTimeUp():
-                await self.shutdown(newChannel, role)
-                return
-            message = None
-            try:
-                message = await self.client.wait_for('message', timeout=300)
-            except:
-                await self.shutdown(newChannel, role)
-            if message.channel.id == newChannel.id and message.author in self.players:
-                content = message.content.lower()
-
-                if f'{globalvars.PREFIX}invite' in content:
-                    #Checks to see that the message contains exactly one invite to a user. If so,
-                    #the user gets permission to talk in the channel and are sent a ping.
-                    mentions = message.mentions
-                    if len(mentions) == 1:
-                        for member in mentions:
-                            #Check to see if the player invites themselves
-                            if member == self.players[0]:
-                                embed = discord.Embed(
-                                    title = "Sorry, you cant really play this game with yourself. :(",
-                                    colour = discord.Color.red()
-                                )
-                                await newChannel.send(embed=embed)
-                            else:
-                                #adds the player to the game and pings them
-                                self.to.resetTimer()
-                                self.players.append(member)
-                                await member.add_roles(role)
-                                await newChannel.set_permissions(member, read_messages = True, send_messages = True)
-                                await newChannel.send(f'Welcome to Tag, {member.mention}!')
-                                self.numPlayers = self.numPlayers + 1
-                    elif len(mentions) == 0:
-                        embed = discord.Embed(
-                            title = "You must mention another user to invite to the game! Please try again.",
-                            colour = discord.Color.red()
-                        )
-                        await newChannel.send(embed=embed)
-                    else:
-                        embed = discord.Embed(
-                            title = "You can only add one user to the game! Please try again.",
-                            colour = discord.Color.red()
-                        )
-                        await newChannel.send(embed=embed)
-                elif content == 'shutdown':
-                    await self.shutdown(newChannel, role)
-                else:
-                    pass
-            
-        #These are the players that have not typed start yet
-        unreadyPlayers = []
-        for player in self.players:
-            unreadyPlayers.append(player)
-        await newChannel.send(embed=self.startingEmbed())
-
-        #wait until all players have typed start
-        while len(unreadyPlayers) > 0:
-            if self.to.isTimeUp():
-                await self.shutdown(newChannel, role)
-            message = None
-            try:
-                message = await self.client.wait_for('message', timeout=300)
-            except:
-                await self.shutdown(newChannel, role)
-            if message.channel.id == newChannel.id and message.author in self.players:
-                content = message.content.lower()
-                if content == 'start':
-                    if message.author in unreadyPlayers:
-                        unreadyPlayers.remove(message.author)
-                    
-                    if len(unreadyPlayers) > 0:
-                        unreadyStrs = []
-                        for member in unreadyPlayers:
-                            unreadyStrs.append(member.mention)
-                        unreadyStr = ', '.join(unreadyStrs)
-                        await newChannel.send(f'{message.author.mention} is now ready to play Tag. Still waiting on: {unreadyStr}')
-                elif content == 'rules':
-                    await newChannel.send(embed=self.rulesEmbed())
-                elif content == 'shutdown':
-                    await self.shutdown(newChannel, role)
-                else:
-                    pass
-        self.to.resetTimer()
-        await self.game(newChannel, role)
-        pass
         
     #The main game code
     async def game(self, channel, role):
-        await channel.send('Made it to the main game code, woop woop!')
+        #set up the variables
+        cones = {}
+        for player in self.players:
+            cones[player] = 0
+        numRange = self.maxRange
+        turn = 1
+        playerIt = self.players[random.randint(0, len(self.players) - 1)]
+
+        #first game embed, the rest of the embeds will be generated in gameEmbed
+        firstGameEmbed = discord.Embed(
+            title='Begin!',
+            description=f'It has been determined... {playerIt.display_name} is IT!',
+            colour=discord.Color.orange()
+        )
+        firstGameEmbed.set_footer(text='This channel will delete itself after 5 minutes if no action is taken!')
+        namesStrs = []
+        firstGameEmbed.add_field(name='Turn', value=f'{turn}/{self.turns}', inline=True)
+        for player in self.players:
+            namesStrs.append(player.display_name)
+            firstGameEmbed.add_field(name=f'{player.display_name}', value=f'{cones[player]} cones', inline=True)
+        firstGameEmbed.add_field(name='Check your DMs!', value=f'You should recieve a message asking for a number between 1 and {numRange}.', inline=False)
+        firstGameEmbed.add_field(name='Keep going!', value='If you would like to exit the game, put "shutdown" in the chat!', inline=False)
+        firstGameEmbed.set_author(name=', '.join(namesStrs))
+        await channel.send(embed=firstGameEmbed)
+
+        #sends the first DM to each user and creates a list of the dm channels for later
+        dmChannels=[]
+        for player in self.players:
+            if player.dm_channel is None:
+                await player.create_dm()
+            dmChannels.append(player.dm_channel)
+            await player.dm_channel.send(embed=self.dmEmbed(player, numRange))
+        
+
+        #The full game loop
         pass
 
     #Deletes the channel and the role once the minigame is done or the game is manually exited
@@ -160,33 +72,46 @@ class Tag:
         globalvars.JUNGLE_NUMS.remove(self.number)
         return
 
-    #Gets the random number for the channel
-    def getChannelNum(self):
-        num = random.randint(1, 9999)
-        while (num in globalvars.TAG_NUMS):
-            num = random.randint(1, 9999)
-        globalvars.TAG_NUMS.append(num)
-        return num
-
     #Returns the embed used at the very beginning before starting the game
     def startingEmbed(self):
         embed = discord.Embed(
             title='Welcome to Tag!',
             description='In order to start the game, both players must type "start" in the chat!\n\nIn order to view rules, type "rules" in the chat!\n\nIf you want to leave, type "shutdown in the chat!',
-            colour=discord.Color.green()
+            colour=discord.Color.orange()
             )
         embed.set_footer(text='This channel will delete itself after 5 minutes if no action is taken!')
-        embed.set_author(name=f'{self.players[0]}, {self.players[1]}')
+        embed.set_author(name=f'{self.players[0].display_name}')
         return embed
 
     #Returns the embed for the rules page
     def rulesEmbed(self):
-        return
+        embed = discord.Embed(
+            title='Rules of Tag!',
+            description=f'This game will have {self.turns} turns.\n\nFor every turn, each player will recieve a DM to guess a number between a given range (starts 1-20).\n\nIf the two players guess the same number, the other player becomes it!\n\nIf they do not, the person who is not it gains ice cream cones and the range shrinks for the next turn.\n\nThe person with the most ice cream cones after all of the turns wins!',
+            colour=discord.Color.purple()
+            )
+        embed.set_footer(text='This channel will delete itself after 5 minutes if no action is taken!')
+        return embed
+
+    #Returns the embed for the message that is DM'd to each user
+    def dmEmbed(self, player, numrange):
+        embed = discord.Embed(
+            title=f'Tag',
+            description=f'{player.display_name}, please enter a number between 1 and {numrange}!',
+            colour=discord.Color.orange()
+        )
+        embed.set_footer(text='The tag channel will delete itself after 5 minutes if no action is taken!')
+        return embed
 
     #Returns the embed for each stage in the game, which differs based on info passed in
-    def gameEmbed(self):
+    def gameEmbed(self, cones, playerIt, turn):
         return
     
     #Returns the embed at the end of the game, which differs based on who won
     def endingEmbed(self):
         return
+
+    def updateVars(self, players, timeout, number):
+        self.players = players
+        self.to = timeout
+        self.number = number
