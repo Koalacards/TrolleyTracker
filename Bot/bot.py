@@ -16,17 +16,70 @@ client = commands.Bot(command_prefix = globalvars.PREFIX)
 
 @client.event
 async def on_ready():
-    print('TrolleyTracker v0.2.1')
+    print('TrolleyTracker v0.3')
 
 @client.command()
 async def clear(ctx, amount=20):
-    if str(ctx.message.author) == 'Koalacards#4618':
+    await ctx.message.delete()
+    if hasPermission(ctx.message.author):
         await ctx.channel.purge(limit=amount)
 
 @client.command()
-async def reset(ctx):
+async def noinvites(ctx):
+    guild = ctx.message.guild
+    #check to see if the user already has the role
+    author = ctx.message.author
+    for role in author.roles:
+        if str(role) == 'noinvites':
+            await ctx.message.channel.send(f'You already have the noinvites role, {author.display_name}!')
+            return
+    #check to see if there is a noinvites role set in place
+    noInvitesRole = None
+    for role in guild.roles:
+        if str(role) == 'noinvites':
+            noInvitesRole = role
+    #create the role if needed
+    if noInvitesRole is None:
+        noInvitesRole = await guild.create_role(name='noinvites')
+    #add the role to the member
+    await author.add_roles(noInvitesRole)
+    await ctx.message.channel.send(f'Role has been added {author.display_name}! Use `{globalvars.PREFIX}invites` to remove the noinvites role.')
+
+
+@client.command()
+async def invites(ctx):
+    author = ctx.message.author
+    channel = ctx.message.channel
+    for role in author.roles:
+        if str(role) == 'noinvites':
+            await author.remove_roles(role)
+            await channel.send(f'The noinvites role has been removed {author.display_name}! Use `{globalvars.PREFIX}noinvites` to re-add the noinvites role')
+            return
+    await channel.send(f'You already dont have the noinvites role, {author.display_name}!')
+    
+@client.command()
+async def reset(ctx, channelName):
     await ctx.message.delete()
-    if str(ctx.message.author) == 'Koalacards#4618':
+    if hasPermission(ctx.message.author):
+        guild = ctx.message.guild
+        for role in guild.roles:
+            if str(role) == channelName:
+                await role.delete()
+
+        for channel in ctx.message.channel.category.channels:
+            if channel.name == channelName:
+                await channel.delete()
+
+        number = int(channelName[-4:])
+        if channelName.split('-')[0] == 'junglevines':
+            globalvars.JUNGLE_NUMS.remove(number)
+        if channelName.split('-')[0] == 'tag':
+            globalvars.TAG_NUMS.remove(channelName)        
+
+@client.command()
+async def resetall(ctx):
+    await ctx.message.delete()
+    if hasPermission(ctx.message.author):
         guild = ctx.message.guild
         for role in guild.roles:
             for gameStr in globalvars.GAMES_LIST:
@@ -64,7 +117,7 @@ async def play(ctx, *, game):
         newGame = MiniGame(ctx, client, gamefinal, 2, 2)
         await newGame.createChannel()
     else:
-        await ctx.send(f'Invalid game selected. Enter "{globalvars.PREFIX}help" for help.')
+        await ctx.send(f'Invalid game selected. Enter `{globalvars.PREFIX}help` for help.')
 
 #Checks to see if a user is eligible to be a part of a 
 def checkUserEligible(member):
@@ -73,4 +126,11 @@ def checkUserEligible(member):
             if gameStr in str(role):
                 return False
     return True
+
+#checks to see if the user that entered the command has permission to
+def hasPermission(member):
+    for role in member.roles:
+        if str(role) in globalvars.EXTRA_PERMS:
+            return True
+    return False
 client.run(globalvars.RUN_ID)

@@ -74,7 +74,7 @@ class MiniGame:
                 playersStr = f'{self.minPlayers}-{self.maxPlayers}'
             embed = discord.Embed(
                 title=author.display_name,
-                description=f'This game requires {playersStr} players, so you will need to invite other user(s) to this channel! To do that, enter "{globalvars.PREFIX}invite [USER]" to add the user to the channel.\n\nIf you need to leave, enter "shutdown".',
+                description=f'This game requires {playersStr} players, so you will need to invite other user(s) to this channel! To do that, enter `{globalvars.PREFIX}invite [USER]` to add the user to the channel.\n\nIf you need to leave, enter "shutdown".',
                 colour=discord.Color.purple()
             )
             embed.set_footer(text='This channel will delete itself after 5 minutes if nobody has been invited.')
@@ -113,9 +113,16 @@ class MiniGame:
                     else:
                         for member in mentions:
                             #Check to see if the player invites themselves
-                            if member == self.players[0]:
+                            if member in self.players:
                                 embed = discord.Embed(
                                     title = "Sorry, you cant play a game with yourself. :(",
+                                    colour = discord.Color.red()
+                                )
+                                await newChannel.send(embed=embed)
+                            elif self.hasNoInvites(member) == False:
+                                embed = discord.Embed(
+                                    title = "Sorry, that player has the noinvites role, meaning that they cannot be invited to multiplayer minigames.",
+                                    description=f'If this is a mistake, have your friend type `{globalvars.PREFIX}invites` in the minigames commands channel!',
                                     colour = discord.Color.red()
                                 )
                                 await newChannel.send(embed=embed)
@@ -189,9 +196,16 @@ class MiniGame:
                     else:
                         for member in mentions:
                             #Check to see if the player invites themselves
-                            if member == self.players[0]:
+                            if member in self.players:
                                 embed = discord.Embed(
                                     title = "Sorry, you cant play a game with yourself. :(",
+                                    colour = discord.Color.red()
+                                )
+                                await newChannel.send(embed=embed)
+                            elif self.hasNoInvites(member) == False:
+                                embed = discord.Embed(
+                                    title = "Sorry, that player has the noinvites role, meaning that they cannot be invited to multiplayer minigames.",
+                                    description=f'If this is a mistake, have your friend type `{globalvars.PREFIX}invites` in the minigames commands channel!',
                                     colour = discord.Color.red()
                                 )
                                 await newChannel.send(embed=embed)
@@ -230,3 +244,10 @@ class MiniGame:
         await channel.delete(reason='removing the game channel because the game is over or was forced to shutdown')
         self.numslist.remove(self.number)
         return
+    
+    #Determines if a member is has the noinvites role
+    def hasNoInvites(self, member):
+        for role in member.roles:
+            if str(role) == 'noinvites':
+                return False
+        return True

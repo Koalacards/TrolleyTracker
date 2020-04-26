@@ -156,7 +156,7 @@ class JungleVines:
             await newChannel.send(embed=self.gameEmbed(spider=spider, successfulJump=successfulJump, currentvine=currentvine, currenttime=currenttime, firstEmbed=False, spiderHit=hitBySpider, batHit = hitByBat, gotBanana=gotBanana, bananas=totalbananas, batNow = bat))
 
             #now the while loop starts again for the next turn
-        pass
+        return
 
 
     #Deletes the channel and the role
@@ -173,7 +173,7 @@ class JungleVines:
     def startingEmbed(self):
         embed = discord.Embed(
             title='Welcome to Jungle Vines!',
-            description='In order to start the game, type "start" in the chat!\n\nIn order to view rules, type "rules" in the chat!\n\nIf you want to leave, type "shutdown in the chat!',
+            description='In order to start the game, enter `start`!\n\nIn order to view rules, enter `rules`!\n\nIf you want to leave, enter `shutdown`!',
             colour=discord.Color.green()
             )
         embed.set_footer(text='This channel will delete itself after 5 minutes if the game has not started.')
@@ -185,7 +185,7 @@ class JungleVines:
     def rulesEmbed(self):
         embed = discord.Embed(
             title='Rules of Junglevines!',
-            description=f'You will have {self.time} seconds worth of moves to cross {self.vines} vines!\n\nFor every move, you will have the option to take 1, 2, or 3 seconds!\n\nThe less amount of time you use, the lower chance you have of making the jump!\n\nThere will also be spiders and bats to avoid!\n\nType "start" to begin your expidition!',
+            description=f'You will have {self.time} seconds worth of moves to cross {self.vines} vines!\n\nFor every move, you will have the option to take 1, 2, or 3 seconds!\n\nThe less amount of time you use, the lower chance you have of making the jump!\n\nThere will also be spiders and bats to avoid!\n\nEnter `start` to begin your expidition!',
             colour=discord.Color.purple()
             )
         embed.set_footer(text='This channel will delete itself after 5 minutes if no action is taken!')
@@ -243,10 +243,10 @@ class JungleVines:
         if batNow:
             embed.add_field(name='There is a bat incoming!', value='If you pick the wrong length of time, the bat will knock you off!', inline=False)
             embed.set_thumbnail(url='https://cdn.discordapp.com/attachments/697203113425240114/697204245782331462/unknown.png')
-        embed.add_field(name='Keep going!', value='If you would like to exit the game, put "shutdown" in the chat!', inline=False)
-        embed.add_field(name='Enter "1":', value='A short but risky jump!', inline=True)
-        embed.add_field(name='Enter "2":', value='A medium-risk jump!', inline=True)
-        embed.add_field(name='Enter "3":', value='A long but very low-risk jump!', inline=True)
+        embed.add_field(name='Keep going!', value='If you would like to exit the game, put `shutdown` in the chat!', inline=False)
+        embed.add_field(name='Enter `1`:', value='A short but risky jump!', inline=True)
+        embed.add_field(name='Enter `2`:', value='A medium-risk jump!', inline=True)
+        embed.add_field(name='Enter `3`:', value='A long but very low-risk jump!', inline=True)
         
         #TODO: add images depending on what happens?
         return embed
