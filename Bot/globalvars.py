@@ -10,6 +10,8 @@ JUNGLE_NUMS = []
 
 TAG_NUMS = []
 
+ICE_SLIDE_NUMS=[]
+
 GAMES_LIST = ['junglevines', 'iceslide', 'tag']
 
 EXTRA_PERMS = ['Moderators', 'KoalaBot']

@@ -22,6 +22,8 @@ class Tag:
         self.players = [context.message.author]
         self.number = 0
         self.to = Timeout(300)
+        self.color = discord.Color.from_rgb(201, 167, 152)
+        self.sleeptime = 5
         
     #The main game code
     async def game(self, channel, role):
@@ -37,7 +39,7 @@ class Tag:
         firstGameEmbed = discord.Embed(
             title=f'Turn {turn}/{self.turns}',
             description=f'It has been determined... {playerIt.display_name} is IT!',
-            colour=discord.Color.orange()
+            colour=self.color
         )
         firstGameEmbed.set_footer(text='This channel will delete itself after 5 minutes if no action is taken!')
         namesStrs = []
@@ -150,8 +152,11 @@ class Tag:
                 numRange = int(numRange / 2)
                 await channel.send(embed=self.gameEmbed(cones, playerIt, turn, choices, conesGained, False, numRange))
 
+
             #send the new dms unless it was the last turn
             if turn <= self.turns:
+                #wait inbetween sending the embed and the dm
+                await asyncio.sleep(self.sleeptime)
                 for player in self.players:
                     if player.dm_channel is None:
                         await player.create_dm()
@@ -185,8 +190,8 @@ class Tag:
     def startingEmbed(self):
         embed = discord.Embed(
             title='Welcome to Tag!',
-            description='In order to start the game, both players must enter `start`!\n\nIn order to view rules, enter `rules`!\n\nIf you want to leave, `shutdown`!',
-            colour=discord.Color.orange()
+            description='In order to start the game, both players must enter `start`!\n\nIn order to view rules, enter `rules`!\n\nIf you want to leave, enter `shutdown`!',
+            colour=self.color
             )
         embed.set_footer(text='This channel will delete itself after 5 minutes if no action is taken!')
         embed.set_author(name=f'{self.players[0].display_name}')
@@ -207,7 +212,7 @@ class Tag:
         embed = discord.Embed(
             title=f'Tag',
             description=f'{player.display_name}, please enter a number between 1 and {numrange}!',
-            colour=discord.Color.orange()
+            colour=self.color
         )
         embed.set_footer(text='The tag channel will delete itself after 5 minutes if no action is taken!')
         return embed
@@ -216,7 +221,7 @@ class Tag:
     def gameEmbed(self, cones, playerIt, turn, choices, whoGainedCones, switch, numRange):
         titlestr = f'Turn {turn}/{self.turns}'
         descriptionstr=''
-        color = discord.Color.orange()
+        color = self.color
         if switch == True:
             descriptionstr = f'{playerIt.display_name} is now IT!'
             color=discord.Color.teal()
@@ -227,14 +232,22 @@ class Tag:
             description=descriptionstr,
             colour=color
         )
-        for key, value in whoGainedCones.items():
-            embed.add_field(name='Ice Cream Cone Update:', value=f'{key.display_name} recieved {value} ice cream cones this turn!', inline=False)
         embed.set_footer(text='This channel will delete itself after 5 minutes if no action is taken!')
         namesStrs = []
         for player in self.players:
-            namesStrs.append(player.display_name)
-            embed.add_field(name=f'{player.display_name}', value=f'{cones[player]} ice cream cones', inline=True)
+            embed.add_field(name=f'{player.display_name}', value=f'Number was: {choices[player]}', inline=True)
         embed.add_field(name='Check your DMs!', value=f'You should recieve a message asking for a number between 1 and {numRange}.', inline=False)
+        for player in self.players:
+            plusCones = ''
+            if player in whoGainedCones.keys():
+                plusCones = f'(+{whoGainedCones[player]})'
+            coneOrCones = ''
+            if cones[player] == 1:
+                coneOrCones = 'cone'
+            else:
+                coneOrCones = 'cones'
+            namesStrs.append(player.display_name)
+            embed.add_field(name=f'{player.display_name}', value=f'{cones[player]} ice cream {coneOrCones} {plusCones}', inline=True)
         embed.add_field(name='Keep going!', value='If you would like to exit the game, put `shutdown` in the tag channel!', inline=False)
         embed.set_author(name=', '.join(namesStrs))
         return embed
@@ -247,7 +260,7 @@ class Tag:
         color = None
         if winner is None:
             descriptionStr = 'The outcome of this Tag game is a tie! Well done to both players!'
-            color = discord.Color.orange()
+            color = self.color
         else:
             descriptionStr = f'The winner of this Tag game is {winner.display_name}! Congratulations!'
             color = discord.Color.green()
@@ -258,8 +271,13 @@ class Tag:
         )
         namesStrs = []
         for player in self.players:
+            coneOrCones = ''
+            if cones[player] == 1:
+                coneOrCones = 'cone'
+            else:
+                coneOrCones = 'cones'
             namesStrs.append(player.display_name)
-            embed.add_field(name=f'{player.display_name}', value=f'{cones[player]} ice cream cones', inline=True)
+            embed.add_field(name=f'{player.display_name}', value=f'{cones[player]} ice cream {coneOrCones}', inline=True)
         embed.set_footer(text='This channel will delete itself after 15 seconds.')
         embed.set_author(name=', '.join(namesStrs))
         return embed

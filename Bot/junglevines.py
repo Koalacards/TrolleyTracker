@@ -20,6 +20,7 @@ class JungleVines:
         self.vines = 15
         self.number = 0
         self.to = Timeout(300)
+        self.color = discord.Color.from_rgb(41, 171, 135)
 
     #All of the main game code for junglevines
     async def game(self, newChannel, role):
@@ -174,7 +175,7 @@ class JungleVines:
         embed = discord.Embed(
             title='Welcome to Jungle Vines!',
             description='In order to start the game, enter `start`!\n\nIn order to view rules, enter `rules`!\n\nIf you want to leave, enter `shutdown`!',
-            colour=discord.Color.green()
+            colour=self.color
             )
         embed.set_footer(text='This channel will delete itself after 5 minutes if the game has not started.')
         embed.set_author(name=self.author.display_name)
@@ -204,11 +205,11 @@ class JungleVines:
         if firstEmbed:
             titleStr = 'Begin!'
             description = 'You may start the game, best of luck!'
-            color=discord.Color.green()
+            color=self.color
         else:
             if successfulJump:
                 titleStr = successtitles[random.randint(0, len(successtitles) - 1)]
-                color=discord.Color.green()
+                color=self.color
                 description = 'Congratulations on a great jump!'
             elif spiderHit:
                 titleStr = failtitles[random.randint(0, len(failtitles) - 1)]
@@ -259,7 +260,7 @@ class JungleVines:
         if win:
             titleStr = 'Congratulations!'
             description = f'You made it through all {self.vines} vines in {time} seconds. Way to go!\n\nYou also collected {bananas} bananas.'
-            color = discord.Color.green()
+            color = self.color
         else:
             titleStr = 'Nice Try!'
             description = f'Unfortunately, you only made it through {vine} vines in {self.time} seconds.\nBetter luck next time!\n\nYou also collected {bananas} bananas.'

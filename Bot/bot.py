@@ -6,7 +6,6 @@ import globalvars
 
 '''
 TODO:Functionality that should be added:
-    -a role to not be invited to multiplayer games that the user can toggle
     -a check that each user has DM's open before playing any game that involves DM's
         -an alternate way of doing this is making the channels non-read for players who arent inputting to the game
     
@@ -16,7 +15,7 @@ client = commands.Bot(command_prefix = globalvars.PREFIX)
 
 @client.event
 async def on_ready():
-    print('TrolleyTracker v0.3')
+    print('TrolleyTracker v0.4')
 
 @client.command()
 async def clear(ctx, amount=20):
@@ -109,7 +108,11 @@ async def play(ctx, *, game):
         await newGame.createChannel()
         return
     elif gamefinal == 'iceslide':
-        await ctx.send('Ice slide is still in development.')
+        if checkUserEligible(ctx.message.author) == False:
+            await ctx.send(f'Sorry <@{ctx.message.author.id}>, you are already in an active minigame channel! You must complete that game to be a part of another one.')
+            return
+        newGame = MiniGame(ctx, client, gamefinal, 2, 8)
+        await newGame.createChannel()
     elif gamefinal == 'tag':
         if checkUserEligible(ctx.message.author) == False:
             await ctx.send(f'Sorry <@{ctx.message.author.id}>, you are already in an active minigame channel! You must complete that game to be a part of another one.')
