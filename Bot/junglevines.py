@@ -19,7 +19,7 @@ class JungleVines:
         self.author = context.message.author
         self.vines = 15
         self.number = 0
-        self.to = Timeout(300)
+        self.to = Timeout(globalvars.SHUTDOWN_TIME)
         self.color = discord.Color.from_rgb(41, 171, 135)
 
     #All of the main game code for junglevines
@@ -59,7 +59,7 @@ class JungleVines:
                     return
                 message = None
                 try:
-                    message = await self.client.wait_for('message', timeout=300)
+                    message = await self.client.wait_for('message', timeout=globalvars.SHUTDOWN_TIME)
                 except:
                     await self.shutdown(newChannel, role)
                     return
@@ -177,7 +177,7 @@ class JungleVines:
             description='In order to start the game, enter `start`!\n\nIn order to view rules, enter `rules`!\n\nIf you want to leave, enter `shutdown`!',
             colour=self.color
             )
-        embed.set_footer(text='This channel will delete itself after 5 minutes if the game has not started.')
+        embed.set_footer(text=f'This channel will delete itself after {globalvars.SHUTDOWN_TIME_MINS} minutes if the game has not started.')
         embed.set_author(name=self.author.display_name)
         #embed.set_image(url='https://vignette.wikia.nocookie.net/toontown/images/f/f0/Jungle_Vines.png/revision/latest/scale-to-width-down/340?cb=20130617235558')
         return embed
@@ -189,7 +189,7 @@ class JungleVines:
             description=f'You will have {self.time} seconds worth of moves to cross {self.vines} vines!\n\nFor every move, you will have the option to take 1, 2, or 3 seconds!\n\nThe less amount of time you use, the lower chance you have of making the jump!\n\nThere will also be spiders and bats to avoid!\n\nEnter `start` to begin your expidition!',
             colour=discord.Color.purple()
             )
-        embed.set_footer(text='This channel will delete itself after 5 minutes if no action is taken!')
+        embed.set_footer(text=f'This channel will delete itself after {globalvars.SHUTDOWN_TIME_MINS} minutes if the game has not started!')
         return embed
 
     #The embed for each message the bot says in the game. This embed is impacted by what has happened
@@ -229,7 +229,7 @@ class JungleVines:
             description=description,
             colour=color
             )
-        embed.set_footer(text='This channel will delete itself after 5 minutes if no action is taken!')
+        embed.set_footer(text=f'This channel will delete itself after {globalvars.SHUTDOWN_TIME_MINS} minutes if no action is taken!')
         embed.set_author(name=self.author.display_name)
         embed.add_field(name='Time', value=f'{self.time - currenttime}/{self.time}', inline=True)
         embed.add_field(name='Vine', value=f'{currentvine}/{self.vines}', inline=True)

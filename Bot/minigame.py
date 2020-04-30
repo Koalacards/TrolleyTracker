@@ -21,7 +21,7 @@ class MiniGame:
         self.maxPlayers = maxPlayers
         self.players = [context.message.author]
         self.number = 0
-        self.to = Timeout(300)
+        self.to = Timeout(globalvars.SHUTDOWN_TIME)
         self.numslist = []
         self.game = None
         self.numPlayers = 1
@@ -84,7 +84,7 @@ class MiniGame:
                 description=f'This game requires {playersStr} players, so you will need to invite other user(s) to this channel! To do that, enter `{globalvars.PREFIX}invite [USER]` to add the user to the channel.\n\nIf you need to leave, enter "shutdown".',
                 colour=discord.Color.purple()
             )
-            embed.set_footer(text='This channel will delete itself after 5 minutes if nobody has been invited.')
+            embed.set_footer(text=f'This channel will delete itself after {globalvars.SHUTDOWN_TIME_MINS} minutes if nobody has been invited.')
             await newChannel.send(embed=embed)
 
         #Wait until the user invites a player or 5 minutes have passed
@@ -94,7 +94,7 @@ class MiniGame:
                 return
             message = None
             try:
-                message = await self.client.wait_for('message', timeout=300)
+                message = await self.client.wait_for('message', timeout=globalvars.SHUTDOWN_TIME)
             except:
                 await self.shutdown(newChannel, role)
             if message.channel.id == newChannel.id and message.author in self.players:
@@ -128,7 +128,7 @@ class MiniGame:
                 await self.shutdown(newChannel, role)
             message = None
             try:
-                message = await self.client.wait_for('message', timeout=300)
+                message = await self.client.wait_for('message', timeout=globalvars.SHUTDOWN_TIME)
             except:
                 await self.shutdown(newChannel, role)
             if message.channel.id == newChannel.id and message.author in self.players:
@@ -163,10 +163,18 @@ class MiniGame:
     def getChannelNum(self):
         #Gets the random number for the channel
         num = random.randint(1, 9999)
-        while (num in self.numslist):
+        numStr = str(num)
+        while (num in self.numslist or self.badNumStr(numStr) == True):
             num = random.randint(1, 9999)
         self.numslist.append(num)
         return num
+    
+    #determines if the 4-digit number contains any part of a bad number
+    def badNumStr(self, numStr):
+        for badNum in globalvars.BAD_NUMS_AS_STR:
+            if badNum in numStr:
+                return True
+        return False
 
     #Checks to see that the message contains invites to users (not more than
     #the maximum). If so,

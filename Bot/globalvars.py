@@ -1,7 +1,5 @@
 #just a bunch of global variables
 
-RUN_ID = 'NjM1NTg2MjY0OTIxNDA3NTIy.Xl3Irw.JX2w5a-A4iS_dITjQTcj9fEs630'
-
 COMMAND_CHANNEL_IDS = [694015251825557606]
 
 PREFIX = 'trolley '
@@ -17,3 +15,11 @@ CANNON_NUMS = []
 GAMES_LIST = ['junglevines', 'iceslide', 'tag', 'cannongame']
 
 EXTRA_PERMS = ['Moderators', 'KoalaBot']
+
+BAD_NUMS_AS_STR = ['69', '420', '911', '666']
+
+#the shutdown time in seconds
+SHUTDOWN_TIME = 120
+
+#the shutdown time in mintes
+SHUTDOWN_TIME_MINS = 2

@@ -15,7 +15,7 @@ class IceSlide:
         self.client = client
         self.players = [context.message.author]
         self.number = 0
-        self.to = Timeout(300)
+        self.to = Timeout(globalvars.SHUTDOWN_TIME)
         self.color = discord.Color.from_rgb(215, 255, 254)
         self.sleeptime = 15
     
@@ -58,7 +58,7 @@ class IceSlide:
                     return
                 message = None
                 try:
-                    message = await self.client.wait_for('message', timeout=300)
+                    message = await self.client.wait_for('message', timeout=globalvars.SHUTDOWN_TIME)
                 except:
                     await self.shutdown(channel, role)
                     return
@@ -177,7 +177,7 @@ class IceSlide:
             description=f'In order to start the game, all players must enter `start`!\n\nIn order to view rules, enter `rules`!\n\nIf you want to invite more players, enter `{globalvars.PREFIX}invite [USER]`!\n\nIf you want to leave, enter `shutdown`!',
             colour=self.color
             )
-        embed.set_footer(text='This channel will delete itself after 5 minutes if no action is taken!')
+        embed.set_footer(text=f'This channel will delete itself after {globalvars.SHUTDOWN_TIME_MINS} minutes if no more players have joined and the game has not started!')
         embed.set_author(name=f'{self.players[0].display_name}')
         return embed
     
@@ -188,17 +188,17 @@ class IceSlide:
             description=f'This game will have {self.rounds} rounds.\n\nFor every round, there will be a randomly generated number between a set range (starts 1-{self.minRange}).\n\nEach person will recieve a DM to guess what the number is.\n\nThe closer you are to the random number, the more points you get!\n\nThe range will increase every round, so hold on tight!\n\nThere will also be random numbers that barrels will spawn on each round, and if you guess one of those numbers you get extra points!\n\nThe person with the most points at the end of the {self.rounds} rounds wins!',
             colour=discord.Color.purple()
             )
-        embed.set_footer(text='This channel will delete itself after 5 minutes if no action is taken!')
+        embed.set_footer(text=f'This channel will delete itself after {globalvars.SHUTDOWN_TIME_MINS} minutes if no more players have joined and the game has not started!')
         return embed
 
     #DM embed for iceslide
     def dmEmbed(self, player, numRange):
         embed = discord.Embed(
-            title=f'Tag',
+            title=f'Ice Slide',
             description=f'{player.display_name}, please enter a number between 1 and {numRange}!',
             colour=self.color
         )
-        embed.set_footer(text='The iceslide channel will delete itself after 5 minutes if no action is taken!')
+        embed.set_footer(text=f'The iceslide channel will delete itself after {globalvars.SHUTDOWN_TIME_MINS} minutes if a player does not make a move!')
         return embed
     
     #First game embed for iceslide
@@ -208,7 +208,7 @@ class IceSlide:
             description='Welcome to Ice Slide and good luck!',
             colour=self.color
         )
-        embed.set_footer(text='This channel will delete itself after 5 minutes if no action is taken!')
+        embed.set_footer(text=f'This channel will delete itself after {globalvars.SHUTDOWN_TIME_MINS} minutes if a player does not make a move!')
         namesStrs = []
         for player in self.players:
             namesStrs.append(player.display_name)
@@ -225,7 +225,7 @@ class IceSlide:
             description=f'The random number for the last round was: {randomNum}!',
             colour=self.color
         )
-        embed.set_footer(text='This channel will delete itself after 5 minutes if no action is taken!')
+        embed.set_footer(text=f'This channel will delete itself after {globalvars.SHUTDOWN_TIME_MINS} minutes if a player does not make a move!')
         namesStrs = []
         barrelSuccessStrs = ['Wow!', 'Way to Go!', 'Well done!', 'Nicely Done!']
         for player in self.players:

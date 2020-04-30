@@ -2,13 +2,16 @@
 Welcome to TrolleyTracker, which will (maybe) eventually be a
 bot that will play minigames on the TTR discord.
 
-To run the bot, run the bot.py file in any python environment and as long
-as the python terminal is open, the bot will run.
+To run the bot:
+1. Download this code or glone it from git.
 
-If you cannot run a play command, you have to add to the COMMAND_READ_IDS
-in globalvars.py to the channel ID that you want your commands to run in.
+2. create a file called confidential.py, and in that file put in:
+    RUN_ID = [The token of your bot] (NOTE: This token should not be shared with anyone or put in any repository.)
 
-The command line pickup for the bot is currently koalabot, but it may be
-changed as the bot goes closer to development.
+3. in globalvars.py, add your wanted channel ID for commands in the COMMAND_CHANNEL_ID's list
+
+4. run bot.py
+
+
 
 

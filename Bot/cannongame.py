@@ -15,7 +15,7 @@ class CannonGame:
         self.yMin = random.randint(1, self.range - 10)
         self.yMax = self.yMin + 10
         self.author = context.message.author
-        self.to = Timeout(300)
+        self.to = Timeout(globalvars.SHUTDOWN_TIME)
         self.color = discord.Color.from_rgb(58, 196, 250)
         self.number = 0
 
@@ -43,7 +43,7 @@ class CannonGame:
                     return
                 message = None
                 try:
-                    message = await self.client.wait_for('message', timeout=300)
+                    message = await self.client.wait_for('message', timeout=globalvars.SHUTDOWN_TIME)
                 except:
                     await self.shutdown(channel, role)
                     return
@@ -125,7 +125,7 @@ class CannonGame:
             description='In order to start the game, enter `start`!\n\nIn order to view rules, enter `rules`!\n\nIf you want to leave, enter `shutdown`!',
             colour=self.color
             )
-        embed.set_footer(text='This channel will delete itself after 5 minutes if the game has not started.')
+        embed.set_footer(text=f'This channel will delete itself after {globalvars.SHUTDOWN_TIME_MINS} minutes if the game has not started.')
         embed.set_author(name=self.author.display_name)
         return embed
     
@@ -136,7 +136,7 @@ class CannonGame:
             description=f'You will have an unlimited amount of tries to guess the correct coordinates of the water bucket!\n\nThe grid is 1000x1000, so for every guess you will put in two numbers between 1 and 1000, one for the horizontal coordinate and one for the vertical.\n\nAn example of a proper guess is `10 10`.\n\nOnce you guess a correct coordinate, the game is over and you win!\n\nTry to land a splash in as few turns as you can!',
             colour=discord.Color.purple()
             )
-        embed.set_footer(text='This channel will delete itself after 5 minutes if no action is taken!')
+        embed.set_footer(text=f'This channel will delete itself after {globalvars.SHUTDOWN_TIME_MINS} minutes if the game has not started.')
         return embed
 
     #first game embed for cannon game
@@ -150,6 +150,7 @@ class CannonGame:
         )
         embed.add_field(name='Keep going!', value='If you would like to exit the game, enter `shutdown`!', inline=False)
         embed.set_author(name=self.author.display_name)
+        embed.set_footer(text=f'This channel will delete itself after {globalvars.SHUTDOWN_TIME_MINS} minutes if a move has not been made.')
         return embed
 
     #game embed for cannon game
@@ -178,6 +179,7 @@ class CannonGame:
         embed.add_field(name='Guesses', value=f'Your horizontal guess of {xguess} (your first number) was {xStr}.\nYour vertical guess of {yguess} (your second number) was {yStr}.')
         embed.add_field(name='Keep going!', value='If you would like to exit the game, enter `shutdown`!', inline=False)
         embed.set_author(name=self.author.display_name)
+        embed.set_footer(text=f'This channel will delete itself after {globalvars.SHUTDOWN_TIME_MINS} minutes if a move has not been made.')
         return embed
     
     #ending embed for cannon game

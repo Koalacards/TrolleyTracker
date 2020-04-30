@@ -21,7 +21,7 @@ class Tag:
         self.client = client
         self.players = [context.message.author]
         self.number = 0
-        self.to = Timeout(300)
+        self.to = Timeout(globalvars.SHUTDOWN_TIME)
         self.color = discord.Color.from_rgb(201, 167, 152)
         self.sleeptime = 5
         
@@ -32,7 +32,7 @@ class Tag:
         for player in self.players:
             cones[player] = 0
         numRange = self.maxRange
-        turn = 1
+        turn = 0
         playerIt = self.players[random.randint(0, len(self.players) - 1)]
 
         #first game embed, the rest of the embeds will be generated in gameEmbed
@@ -41,7 +41,7 @@ class Tag:
             description=f'It has been determined... {playerIt.display_name} is IT!',
             colour=self.color
         )
-        firstGameEmbed.set_footer(text='This channel will delete itself after 5 minutes if no action is taken!')
+        firstGameEmbed.set_footer(text=f'This channel will delete itself after {globalvars.SHUTDOWN_TIME_MINS} minutes if a player has not made a move!')
         namesStrs = []
         for player in self.players:
             namesStrs.append(player.display_name)
@@ -61,7 +61,7 @@ class Tag:
         
 
         #The full game loop
-        while turn <= self.turns:
+        while turn < self.turns:
             #the number each person picks in each turn
             choices = {}
 
@@ -77,7 +77,7 @@ class Tag:
                     return
                 message = None
                 try:
-                    message = await self.client.wait_for('message', timeout=300)
+                    message = await self.client.wait_for('message', timeout=globalvars.SHUTDOWN_TIME)
                 except:
                     await self.shutdown(channel, role)
                     return
@@ -102,7 +102,8 @@ class Tag:
                             await message.channel.send(embed=outOfBoundsEmbed)
                         else:
                             await message.channel.send(':thumbsup:')
-                            undecidedPlayers.remove(message.author)
+                            if message.author in undecidedPlayers:
+                                undecidedPlayers.remove(message.author)
                             choices[message.author] = chosenNum
                 
                 if message.channel == channel:
@@ -154,7 +155,7 @@ class Tag:
 
 
             #send the new dms unless it was the last turn
-            if turn <= self.turns:
+            if turn < self.turns:
                 #wait inbetween sending the embed and the dm
                 await asyncio.sleep(self.sleeptime)
                 for player in self.players:
@@ -193,7 +194,7 @@ class Tag:
             description='In order to start the game, both players must enter `start`!\n\nIn order to view rules, enter `rules`!\n\nIf you want to leave, enter `shutdown`!',
             colour=self.color
             )
-        embed.set_footer(text='This channel will delete itself after 5 minutes if no action is taken!')
+        embed.set_footer(text=f'This channel will delete itself after {globalvars.SHUTDOWN_TIME_MINS} minutes if the game has not started!')
         embed.set_author(name=f'{self.players[0].display_name}')
         return embed
 
@@ -204,7 +205,7 @@ class Tag:
             description=f'This game will have {self.turns} turns.\n\nFor every turn, each player will recieve a DM to guess a number between a given range (starts 1-{self.maxRange}).\n\nIf the two players guess the same number, the other player becomes it!\n\nIf they do not, the person who is not it gains ice cream cones and the range shrinks for the next turn.\n\nThe person with the most ice cream cones after all of the turns wins!',
             colour=discord.Color.purple()
             )
-        embed.set_footer(text='This channel will delete itself after 5 minutes if no action is taken!')
+        embed.set_footer(text=f'This channel will delete itself after {globalvars.SHUTDOWN_TIME_MINS} minutes if the game has not started!')
         return embed
 
     #Returns the embed for the message that is DM'd to each user
@@ -214,7 +215,7 @@ class Tag:
             description=f'{player.display_name}, please enter a number between 1 and {numrange}!',
             colour=self.color
         )
-        embed.set_footer(text='The tag channel will delete itself after 5 minutes if no action is taken!')
+        embed.set_footer(text=f'The tag channel will delete itself after {globalvars.SHUTDOWN_TIME_MINS} minutes if a player does not make a move!')
         return embed
 
     #Returns the embed for each stage in the game, which differs based on info passed in
@@ -232,7 +233,7 @@ class Tag:
             description=descriptionstr,
             colour=color
         )
-        embed.set_footer(text='This channel will delete itself after 5 minutes if no action is taken!')
+        embed.set_footer(text=f'This channel will delete itself after {globalvars.SHUTDOWN_TIME_MINS} minutes if a player does not make a move!')
         namesStrs = []
         for player in self.players:
             embed.add_field(name=f'{player.display_name}', value=f'Number was: {choices[player]}', inline=True)

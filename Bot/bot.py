@@ -4,6 +4,7 @@ from discord.ext import commands
 from minigame import MiniGame
 import helpEmbed
 import globalvars
+import confidential
 
 '''
 TODO:Functionality that should be added:
@@ -17,7 +18,7 @@ client.remove_command('help')
 
 @client.event
 async def on_ready():
-    print('TrolleyTracker v0.4.2')
+    print('TrolleyTracker v0.4.3')
 
 @client.command()
 async def clear(ctx, amount=20):
@@ -151,4 +152,4 @@ def hasPermission(member):
         if str(role) in globalvars.EXTRA_PERMS:
             return True
     return False
-client.run(globalvars.RUN_ID)
+client.run(confidential.RUN_ID)
