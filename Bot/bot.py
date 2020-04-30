@@ -2,6 +2,7 @@ import discord
 from discord.ext import commands
 
 from minigame import MiniGame
+import helpEmbed
 import globalvars
 
 '''
@@ -12,16 +13,24 @@ TODO:Functionality that should be added:
 '''
 
 client = commands.Bot(command_prefix = globalvars.PREFIX)
+client.remove_command('help')
 
 @client.event
 async def on_ready():
-    print('TrolleyTracker v0.4')
+    print('TrolleyTracker v0.4.1')
 
 @client.command()
 async def clear(ctx, amount=20):
     await ctx.message.delete()
     if hasPermission(ctx.message.author):
         await ctx.channel.purge(limit=amount)
+
+@client.command()
+async def help(ctx):
+    if hasPermission(ctx.message.author):
+        await ctx.channel.send(embed=helpEmbed.modHelpEmbed())
+    else:
+        await ctx.channel.send(embed=helpEmbed.regHelpEmbed())
 
 @client.command()
 async def noinvites(ctx):
@@ -118,6 +127,12 @@ async def play(ctx, *, game):
             await ctx.send(f'Sorry <@{ctx.message.author.id}>, you are already in an active minigame channel! You must complete that game to be a part of another one.')
             return
         newGame = MiniGame(ctx, client, gamefinal, 2, 2)
+        await newGame.createChannel()
+    elif gamefinal == 'cannongame':
+        if checkUserEligible(ctx.message.author) == False:
+            await ctx.send(f'Sorry <@{ctx.message.author.id}>, you are already in an active minigame channel! You must complete that game to be a part of another one.')
+            return
+        newGame = MiniGame(ctx, client, gamefinal, 1, 1)
         await newGame.createChannel()
     else:
         await ctx.send(f'Invalid game selected. Enter `{globalvars.PREFIX}help` for help.')

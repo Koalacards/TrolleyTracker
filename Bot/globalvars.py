@@ -12,6 +12,8 @@ TAG_NUMS = []
 
 ICE_SLIDE_NUMS=[]
 
-GAMES_LIST = ['junglevines', 'iceslide', 'tag']
+CANNON_NUMS = []
+
+GAMES_LIST = ['junglevines', 'iceslide', 'tag', 'cannongame']
 
 EXTRA_PERMS = ['Moderators', 'KoalaBot']

@@ -6,6 +6,7 @@ from timeout import Timeout
 from junglevines import JungleVines
 from tag import Tag
 from iceslide import IceSlide
+from cannongame import CannonGame
 import globalvars
 
 #Represents a minigame. This is an abstraction of all the individual minigames
@@ -36,6 +37,9 @@ class MiniGame:
         elif self.prefix == 'iceslide':
             self.game = IceSlide(self.context, self.client)
             self.numslist = globalvars.ICE_SLIDE_NUMS
+        elif self.prefix == 'cannongame':
+            self.game = CannonGame(self.context, self.client)
+            self.numslist = globalvars.CANNON_NUMS
             
         
         #Gets the number for the game channel and role 
