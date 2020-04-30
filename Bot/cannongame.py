@@ -82,6 +82,8 @@ class CannonGame:
                         await self.shutdown(channel, role)
                         return
             
+            self.to.resetTimer()
+            
             #Check to see if the game is over, if not move to the next turn
             if xGuess >= self.xMin and xGuess <= self.xMax and yGuess >= self.yMin and yGuess <= self.yMax:
                 await channel.send(embed=self.endingEmbed(attempt, xGuess, yGuess))
