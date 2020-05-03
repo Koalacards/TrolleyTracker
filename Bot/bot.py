@@ -18,7 +18,7 @@ client.remove_command('help')
 
 @client.event
 async def on_ready():
-    print('TrolleyTracker v0.4.3')
+    print('TrolleyTracker v0.4.4')
 
 @client.command()
 async def clear(ctx, amount=20):

@@ -1,6 +1,7 @@
 import discord
 import random
 import asyncio
+import math
 
 from timeout import Timeout
 import globalvars
@@ -9,8 +10,9 @@ class IceSlide:
     def __init__(self, context, client):
         self.rounds = 6
         self.minRange = 5
-        self.barrelMultiplier = 10
+        self.barrelMultiplier = 5
         self.barrelFreqDivider = 5
+        self.bullseyeMultiplier = 5
         self.context = context
         self.client = client
         self.players = [context.message.author]
@@ -92,26 +94,34 @@ class IceSlide:
                         return
 
             #once all of the numbers have been collected, time to add the points
-            self.to.resetTimer()
-            roundNum = roundNum + 1
 
             pointsGained = {}
             for player, guess in choices.items():
-                calculatedNum = currentrange - abs(guess - randomNum)
                 #points gained from being close to the random number
-                numPoints = random.randint(calculatedNum, 2 * calculatedNum)
+                calculatedNum = int(max(0, currentrange - math.floor((1.2 * abs(guess - randomNum)))))
                 if guess in barrelNums:
                     whoGotBarrels.append(player)
                     #points gained from collecting a barrel
                     addedBarrelPoints = roundNum * self.barrelMultiplier
                     #total points in the round
-                    numPoints = numPoints + addedBarrelPoints
+                    calculatedNum = calculatedNum + addedBarrelPoints
+                if guess == randomNum:
+                    #points gained from getting a bullseye
+                    addedBullseyePoints = roundNum * self.bullseyeMultiplier
+                    #total points in the round
+                    calculatedNum = calculatedNum + addedBullseyePoints
+                #randomness to make it more fun :P
+                numPoints = random.randint(calculatedNum, math.floor(1.5 * calculatedNum))
                 #add it to the points gained dictionary
                 pointsGained[player] = numPoints
                 #add it to the overall points dictionary
                 points[player] = points[player] + numPoints
             
+            #reset variables
+            self.to.resetTimer()
             currentrange = currentrange * 2
+            roundNum = roundNum + 1
+            self.bullseyeMultiplier = currentrange
 
             #Sends out the embed for the round
             await channel.send(embed=self.gameEmbed(roundNum, points, choices, pointsGained, whoGotBarrels, currentrange, randomNum))
@@ -227,13 +237,17 @@ class IceSlide:
         )
         embed.set_footer(text=f'This channel will delete itself after {globalvars.SHUTDOWN_TIME_MINS} minutes if a player does not make a move!')
         namesStrs = []
-        barrelSuccessStrs = ['Wow!', 'Way to Go!', 'Well done!', 'Nicely Done!']
+        
         for player in self.players:
-            embed.add_field(name=f'{player.display_name}', value=f'Number guessed: {choices[player]}', inline=True)
+            bullseyeStr = ''
+            barrelStr=''
+            if choices[player] == randomNum:
+                bullseyeStr = '-Bullseye!'
+            if player in whoGotBarrels:
+                barrelStr = '-Barrel Collected!'
+            embed.add_field(name=f'{player.display_name}', value=f'Number guessed: {choices[player]}{bullseyeStr}{barrelStr}', inline=True)
         embed.add_field(name='Check your DMs!', value=f'You should recieve a message asking for a number between 1 and {currentrange}.', inline=False)
         for player in self.players:
-            if player in whoGotBarrels:
-                embed.add_field(name=barrelSuccessStrs[random.randint(0, len(barrelSuccessStrs)- 1)], value=f'{player.display_name} collected a barrel this turn!', inline=False)
             pointOrPoints = ''
             if points[player] == 1:
                 pointOrPoints = 'point'
