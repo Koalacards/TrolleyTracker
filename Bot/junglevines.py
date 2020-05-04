@@ -4,6 +4,7 @@ import asyncio
 
 from timeout import Timeout
 import globalvars
+import logger
 
 #Trolley game of JungleVines
 #-Players: 1
@@ -71,6 +72,7 @@ class JungleVines:
                             await newChannel.send('You do not have enough time to make this move!')
                             numSeconds = 0
                         else:
+                            logger.log(f'{self.author.display_name} has made their move in second {currenttime} in channel {str(newChannel)}')
                             moveDone = True
                             self.to.resetTimer()
                     elif message.content == 'shutdown':
@@ -133,12 +135,14 @@ class JungleVines:
 
             #check for the end of the game
             if currentvine == self.vines:
+                logger.log(f'{self.author.display_name} has won Jungle Vines in {str(newChannel)}')
                 await newChannel.send(embed=self.endingEmbed(currenttime, currentvine, totalbananas, True))
                 await asyncio.sleep(15)
                 await self.shutdown(newChannel, role)
                 return
 
             if currenttime == self.time:
+                logger.log(f'{self.author.display_name} has lost Jungle Vines in {str(newChannel)}')
                 await newChannel.send(embed=self.endingEmbed(currenttime, currentvine, totalbananas, False))
                 await asyncio.sleep(15)
                 await self.shutdown(newChannel, role)
@@ -162,6 +166,7 @@ class JungleVines:
 
     #Deletes the channel and the role
     async def shutdown(self, channel, role):
+        logger.log(f'{str(channel)} is shutting down')
         await role.delete()
         embed = discord.Embed(title='Shutting down...', colour=discord.Color.red())
         await channel.send(embed=embed)

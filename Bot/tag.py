@@ -4,6 +4,7 @@ import asyncio
 
 from timeout import Timeout
 import globalvars
+import logger
 
 #Trolley game of Tag
 #-Players: 2
@@ -101,6 +102,7 @@ class Tag:
                             )
                             await message.channel.send(embed=outOfBoundsEmbed)
                         else:
+                            logger.log(f'{message.author.display_name} has made their move for turn {turn} in {str(channel)}')
                             await message.channel.send(':thumbsup:')
                             if message.author in undecidedPlayers:
                                 undecidedPlayers.remove(message.author)
@@ -172,6 +174,8 @@ class Tag:
                 winningNum = cones[player]
             elif cones[player] == winningNum and winner is not None:
                 winner = None
+        for winners in winner:
+            logger.log(f'{winners.display_name} has won in channel {str(channel)}')
         await channel.send(embed=self.endingEmbed(cones, winner))
         await asyncio.sleep(15)
         await self.shutdown(channel, role)
@@ -179,6 +183,7 @@ class Tag:
 
     #Deletes the channel and the role once the minigame is done or the game is manually exited
     async def shutdown(self, channel, role):
+        logger.log(f'{str(channel)} is shutting down')
         await role.delete()
         embed = discord.Embed(title='Shutting down...', colour=discord.Color.red())
         await channel.send(embed=embed)

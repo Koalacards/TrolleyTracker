@@ -4,7 +4,14 @@ import asyncio
 
 from timeout import Timeout
 import globalvars
+import logger
 
+#Trolley game of JungleVines
+#-Players: 1
+#-Requires DM's to be open: no
+#-Length of game: short
+#-Description: In a 1000x1000 range you have to guess two numbers that are within two randomly
+#generated 10-wide ranges.
 class CannonGame:
     def __init__(self, context, client):
         self.range = 1000
@@ -76,6 +83,7 @@ class CannonGame:
                                 )
                                 await message.channel.send(embed=notInRangeEmbed)
                             else:
+                                logger.log(f'{self.author.display_name} has entered a guess for attempt {attempt}  in {str(channel)}')
                                 hasGuessed = True
 
                     elif content == 'shutdown':
@@ -86,6 +94,7 @@ class CannonGame:
             
             #Check to see if the game is over, if not move to the next turn
             if xGuess >= self.xMin and xGuess <= self.xMax and yGuess >= self.yMin and yGuess <= self.yMax:
+                logger.log(f'{self.author.display_name} has won cannongame in {str(channel)}')
                 await channel.send(embed=self.endingEmbed(attempt, xGuess, yGuess))
                 await asyncio.sleep(15)
                 await self.shutdown(channel, role)
@@ -110,6 +119,7 @@ class CannonGame:
 
     #Deletes the channel and the role once the minigame is done or the game is manually exited
     async def shutdown(self, channel, role):
+        logger.log(f'{str(channel)} is shutting down')
         await role.delete()
         embed = discord.Embed(title='Shutting down...', colour=discord.Color.red())
         await channel.send(embed=embed)

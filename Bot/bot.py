@@ -1,5 +1,6 @@
 import discord
 from discord.ext import commands
+import logger
 
 from minigame import MiniGame
 import helpEmbed
@@ -18,20 +19,23 @@ client.remove_command('help')
 
 @client.event
 async def on_ready():
-    print('TrolleyTracker v0.4.4')
+    print('TrolleyTracker v0.4.5')
 
 @client.command()
 async def clear(ctx, amount=20):
     await ctx.message.delete()
     if hasPermission(ctx.message.author):
         await ctx.channel.purge(limit=amount)
+        logger.log(f'{amount} messages cleared by {ctx.message.author.display_name}')
 
 @client.command()
 async def help(ctx):
     if hasPermission(ctx.message.author):
         await ctx.channel.send(embed=helpEmbed.modHelpEmbed())
+        logger.log(f'mod help command called by {ctx.message.author.display_name}')
     else:
         await ctx.channel.send(embed=helpEmbed.regHelpEmbed())
+        logger.log(f'regular help command called by {ctx.message.author.display_name}')
 
 @client.command()
 async def noinvites(ctx):
@@ -52,6 +56,7 @@ async def noinvites(ctx):
         noInvitesRole = await guild.create_role(name='noinvites')
     #add the role to the member
     await author.add_roles(noInvitesRole)
+    logger.log(f'the noinvites role has been added to {author.display_name}')
     await ctx.message.channel.send(f'Role has been added {author.display_name}! Use `{globalvars.PREFIX}invites` to remove the noinvites role.')
 
 
@@ -62,6 +67,7 @@ async def invites(ctx):
     for role in author.roles:
         if str(role) == 'noinvites':
             await author.remove_roles(role)
+            logger.log(f'the noinvites role has been removed from {author.display_name}')
             await channel.send(f'The noinvites role has been removed {author.display_name}! Use `{globalvars.PREFIX}noinvites` to re-add the noinvites role')
             return
     await channel.send(f'You already dont have the noinvites role, {author.display_name}!')
@@ -70,6 +76,7 @@ async def invites(ctx):
 async def reset(ctx, channelName):
     await ctx.message.delete()
     if hasPermission(ctx.message.author):
+        logger.log(f'{ctx.message.author.display_name} has reset channel {channelName}')
         guild = ctx.message.guild
         for role in guild.roles:
             if str(role) == channelName:
@@ -89,6 +96,7 @@ async def reset(ctx, channelName):
 async def resetall(ctx):
     await ctx.message.delete()
     if hasPermission(ctx.message.author):
+        logger.log(f'{ctx.message.author.display_name} has reset all channels')
         guild = ctx.message.guild
         for role in guild.roles:
             for gameStr in globalvars.GAMES_LIST:
@@ -114,6 +122,7 @@ async def play(ctx, *, game):
         if checkUserEligible(ctx.message.author) == False:
             await ctx.send(f'Sorry <@{ctx.message.author.id}>, you are already in an active minigame channel! You must complete that game to be a part of another one.')
             return
+        logger.log(f'new game of Jungle Vines created by {ctx.message.author.display_name}')
         newGame = MiniGame(ctx, client, gamefinal, 1, 1)
         await newGame.createChannel()
         return
@@ -121,18 +130,21 @@ async def play(ctx, *, game):
         if checkUserEligible(ctx.message.author) == False:
             await ctx.send(f'Sorry <@{ctx.message.author.id}>, you are already in an active minigame channel! You must complete that game to be a part of another one.')
             return
+        logger.log(f'new game of Ice Slide created by {ctx.message.author.display_name}')
         newGame = MiniGame(ctx, client, gamefinal, 2, 8)
         await newGame.createChannel()
     elif gamefinal == 'tag':
         if checkUserEligible(ctx.message.author) == False:
             await ctx.send(f'Sorry <@{ctx.message.author.id}>, you are already in an active minigame channel! You must complete that game to be a part of another one.')
             return
+        logger.log(f'new game of Tag created by {ctx.message.author.display_name}')
         newGame = MiniGame(ctx, client, gamefinal, 2, 2)
         await newGame.createChannel()
     elif gamefinal == 'cannongame':
         if checkUserEligible(ctx.message.author) == False:
             await ctx.send(f'Sorry <@{ctx.message.author.id}>, you are already in an active minigame channel! You must complete that game to be a part of another one.')
             return
+        logger.log(f'new game of Cannon Game created by {ctx.message.author.display_name}')
         newGame = MiniGame(ctx, client, gamefinal, 1, 1)
         await newGame.createChannel()
     else:

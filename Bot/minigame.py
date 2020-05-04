@@ -8,6 +8,7 @@ from tag import Tag
 from iceslide import IceSlide
 from cannongame import CannonGame
 import globalvars
+import logger
 
 #Represents a minigame. This is an abstraction of all the individual minigames
 #This class creates the channel for the minigame and waits for the game to start,
@@ -58,11 +59,16 @@ class MiniGame:
         role = await guild.create_role(name=channelRoleName)
         await author.add_roles(role)
 
+        logger.log(f'new role {channelRoleName} has been created')
+
+
         #Next, the channel is made in the category that they sent the message in
         newChannel = await guild.create_text_channel(
             name=channelRoleName,
             category=self.context.message.channel.category
         )
+
+        logger.log(f'new channel {channelRoleName} has been created')
 
         #Then, permissions are set so that the created role can send messages in the channel
         #The rest can read the messages if they want to to see how the game is going
@@ -134,6 +140,7 @@ class MiniGame:
             if message.channel.id == newChannel.id and message.author in self.players:
                 content = message.content.lower()
                 if content == 'start':
+                    logger.log(f'{message.author.display_name} has typed start in {channelRoleName}')
                     if message.author in unreadyPlayers:
                         unreadyPlayers.remove(message.author)
                     
@@ -144,6 +151,7 @@ class MiniGame:
                         unreadyStr = ', '.join(unreadyStrs)
                         await newChannel.send(f'{message.author.display_name} is ready to play! Still waiting on: {unreadyStr}')
                 elif content == 'rules':
+                    logger.log(f'{message.author.display_name} has typed rules in {channelRoleName}')
                     await newChannel.send(embed=self.game.rulesEmbed())
                 elif content == 'shutdown':
                     await self.shutdown(newChannel, role)
@@ -155,6 +163,7 @@ class MiniGame:
                     pass
         self.to.resetTimer()
         self.game.updateVars(self.players, self.to, self.number)
+        logger.log(f'game sequence for {channelRoleName} has started')
         await self.game.game(newChannel, role)
         pass         
 
@@ -214,6 +223,7 @@ class MiniGame:
                     await channel.send(embed=embed)
                 else:
                     #adds the player to the game and pings them
+                    logger.log(f'{member.display_name} has been invited to channel {str(channel)}')
                     self.to.resetTimer()
                     self.players.append(member)
                     await member.add_roles(role)
@@ -225,6 +235,7 @@ class MiniGame:
 
     #Deletes the channel and the role
     async def shutdown(self, channel, role):
+        logger.log(f'{str(channel)} is shutting down')
         await role.delete()
         embed = discord.Embed(title='Shutting down...', colour=discord.Color.red())
         await channel.send(embed=embed)

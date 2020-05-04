@@ -2,10 +2,19 @@ import discord
 import random
 import asyncio
 import math
+import logger
 
 from timeout import Timeout
 import globalvars
 
+
+#Trolley game of Tag
+#-Players: 2-8
+#-Requires DM's to be open: yes
+#-Length of game: short
+#-Description: Game where a random number is generated between a range and people try to guess the
+#number, the closer they are the more points they get. There are also barrels and tnt's that can
+#add or take away extra points.
 class IceSlide:
     def __init__(self, context, client):
         self.rounds = 6
@@ -84,6 +93,7 @@ class IceSlide:
                             )
                             await message.channel.send(embed=outOfBoundsEmbed)
                         else:
+                            logger.log(f'{message.author.display_name} has made their move for round {roundNum} in {str(channel)}')
                             await message.channel.send(':thumbsup:')
                             undecidedPlayers.remove(message.author)
                             choices[message.author] = chosenNum
@@ -146,6 +156,8 @@ class IceSlide:
             elif points[player] == winningNum and len(winner) > 0:
                 winner.append(player)
 
+        for winners in winner:
+            logger.log(f'{winners.display_name} has won in channel {str(channel)}')
         await channel.send(embed=self.endingEmbed(points, winner))
         await asyncio.sleep(15)
         await self.shutdown(channel, role)
@@ -172,6 +184,7 @@ class IceSlide:
 
     #Deletes the channel and the role once the minigame is done or the game is manually exited
     async def shutdown(self, channel, role):
+        logger.log(f'{str(channel)} is shutting down')
         await role.delete()
         embed = discord.Embed(title='Shutting down...', colour=discord.Color.red())
         await channel.send(embed=embed)
