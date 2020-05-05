@@ -19,7 +19,13 @@ client.remove_command('help')
 
 @client.event
 async def on_ready():
-    print('TrolleyTracker v0.4.5')
+    print('TrolleyTracker v0.4.6')
+
+#This isnt supposed to do anything, this is exclusively to remove an error from the console
+@client.command()
+async def invite(ctx, *, bs):
+    #do nothing lol
+    pass
 
 @client.command()
 async def clear(ctx, amount=20):
@@ -90,7 +96,11 @@ async def reset(ctx, channelName):
         if channelName.split('-')[0] == 'junglevines':
             globalvars.JUNGLE_NUMS.remove(number)
         if channelName.split('-')[0] == 'tag':
-            globalvars.TAG_NUMS.remove(channelName)        
+            globalvars.TAG_NUMS.remove(number)   
+        if channelName.split('-')[0] == 'iceslide':
+            globalvars.ICE_SLIDE_NUMS.remove(number)
+        if channelName.split('-')[0] == 'cannongame':
+            globalvars.CANNON_NUMS.remove(number)     
 
 @client.command()
 async def resetall(ctx):

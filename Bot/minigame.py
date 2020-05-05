@@ -67,6 +67,7 @@ class MiniGame:
             name=channelRoleName,
             category=self.context.message.channel.category
         )
+        category = newChannel.category
 
         logger.log(f'new channel {channelRoleName} has been created')
 
@@ -96,13 +97,15 @@ class MiniGame:
         #Wait until the user invites a player or 5 minutes have passed
         while self.numPlayers < self.minPlayers:
             if self.to.isTimeUp():
-                await self.shutdown(newChannel, role)
+                if newChannel in category.channels:
+                    await self.shutdown(newChannel, role)
                 return
             message = None
             try:
                 message = await self.client.wait_for('message', timeout=globalvars.SHUTDOWN_TIME)
             except:
-                await self.shutdown(newChannel, role)
+                if newChannel in category.channels:
+                    await self.shutdown(newChannel, role)
             if message.channel.id == newChannel.id and message.author in self.players:
                 content = message.content.lower()
 
@@ -131,12 +134,14 @@ class MiniGame:
         #wait until all players have typed start
         while len(unreadyPlayers) > 0:
             if self.to.isTimeUp():
-                await self.shutdown(newChannel, role)
+                if newChannel in category.channels:
+                    await self.shutdown(newChannel, role)
             message = None
             try:
                 message = await self.client.wait_for('message', timeout=globalvars.SHUTDOWN_TIME)
             except:
-                await self.shutdown(newChannel, role)
+                if newChannel in category.channels:
+                    await self.shutdown(newChannel, role)
             if message.channel.id == newChannel.id and message.author in self.players:
                 content = message.content.lower()
                 if content == 'start':

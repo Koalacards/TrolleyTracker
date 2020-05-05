@@ -35,6 +35,7 @@ class Tag:
         numRange = self.maxRange
         turn = 0
         playerIt = self.players[random.randint(0, len(self.players) - 1)]
+        category = channel.category
 
         #first game embed, the rest of the embeds will be generated in gameEmbed
         firstGameEmbed = discord.Embed(
@@ -74,13 +75,15 @@ class Tag:
             #grabbing the messages from players
             while len(undecidedPlayers) > 0:
                 if self.to.isTimeUp():
-                    await self.shutdown(channel, role)
+                    if channel in category.channels:
+                        await self.shutdown(channel, role)
                     return
                 message = None
                 try:
                     message = await self.client.wait_for('message', timeout=globalvars.SHUTDOWN_TIME)
                 except:
-                    await self.shutdown(channel, role)
+                    if channel in category.channels:
+                        await self.shutdown(channel, role)
                     return
                 if message.channel in dmChannels and message.author in self.players:
                     content = message.content.lower()
@@ -210,6 +213,7 @@ class Tag:
             description=f'This game will have {self.turns} turns.\n\nFor every turn, each player will recieve a DM to guess a number between a given range (starts 1-{self.maxRange}).\n\nIf the two players guess the same number, the other player becomes it!\n\nIf they do not, the person who is not it gains ice cream cones and the range shrinks for the next turn.\n\nThe person with the most ice cream cones after all of the turns wins!',
             colour=discord.Color.purple()
             )
+        embed.add_field(name=f'How the icecream cones are calculated:', value=f'When you are not it, you get a random number of cones between the range [{self.maxRange}/(the largest number in the current range)] to 2 * [{self.maxRange}/(the largest number in the current range)]', inline=False)
         embed.set_footer(text=f'This channel will delete itself after {globalvars.SHUTDOWN_TIME_MINS} minutes if the game has not started!')
         return embed
 

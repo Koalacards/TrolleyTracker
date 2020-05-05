@@ -19,9 +19,11 @@ class IceSlide:
     def __init__(self, context, client):
         self.rounds = 6
         self.minRange = 5
-        self.barrelMultiplier = 5
+        self.barrelMultiplier = 3
         self.barrelFreqDivider = 5
         self.bullseyeMultiplier = 5
+        self.tntMultiplier = 5
+        self.tntFreqDivider = 10
         self.context = context
         self.client = client
         self.players = [context.message.author]
@@ -36,6 +38,7 @@ class IceSlide:
         points = {}
         for player in self.players:
             points[player] = 0
+        category = channel.category
 
         #send the first game message
         await channel.send(embed=self.firstGameEmbed(roundNum, points, currentrange))
@@ -51,10 +54,12 @@ class IceSlide:
         #the full game loop
         while roundNum < self.rounds:
             #declare round-specific variables
-            barrelNums = self.genBarrelNums(int(currentrange / 5), currentrange)
-            whoGotBarrels = []
-            choices = {}
             randomNum = random.randint(1, currentrange)
+            barrelNums = self.genBarrelNums(math.ceil(currentrange / self.barrelFreqDivider), currentrange, randomNum)
+            tntNums = self.genTNTNums(math.ceil(currentrange / self.tntFreqDivider), currentrange, randomNum, barrelNums)
+            whoGotBarrels = []
+            whoGotTNT = []
+            choices = {}
 
 
             #list of players that have not dm'd back a number to the bot
@@ -65,13 +70,15 @@ class IceSlide:
             #Bot looks for numbers in the Dm's or a 'shutdown' in the main iceslide channel
             while len(undecidedPlayers) > 0:
                 if self.to.isTimeUp():
-                    await self.shutdown(channel, role)
+                    if channel in category.channels:
+                        await self.shutdown(channel, role)
                     return
                 message = None
                 try:
                     message = await self.client.wait_for('message', timeout=globalvars.SHUTDOWN_TIME)
                 except:
-                    await self.shutdown(channel, role)
+                    if channel in category.channels:
+                        await self.shutdown(channel, role)
                     return
                 if message.channel in dmChannels and message.author in self.players:
                     content = message.content.lower()
@@ -120,12 +127,16 @@ class IceSlide:
                     addedBullseyePoints = roundNum * self.bullseyeMultiplier
                     #total points in the round
                     calculatedNum = calculatedNum + addedBullseyePoints
-                #randomness to make it more fun :P
-                numPoints = random.randint(calculatedNum, math.floor(1.5 * calculatedNum))
+                if guess in tntNums:
+                    whoGotTNT.append(player)
+                    #points lost from collecting tnt
+                    lostTNTPoints = roundNum * self.tntMultiplier
+                    #total points in the round
+                    calculatedNum = calculatedNum - lostTNTPoints
                 #add it to the points gained dictionary
-                pointsGained[player] = numPoints
+                pointsGained[player] = calculatedNum
                 #add it to the overall points dictionary
-                points[player] = points[player] + numPoints
+                points[player] = points[player] + calculatedNum
             
             #reset variables
             self.to.resetTimer()
@@ -134,7 +145,7 @@ class IceSlide:
             self.bullseyeMultiplier = currentrange
 
             #Sends out the embed for the round
-            await channel.send(embed=self.gameEmbed(roundNum, points, choices, pointsGained, whoGotBarrels, currentrange, randomNum))
+            await channel.send(embed=self.gameEmbed(roundNum, points, choices, pointsGained, whoGotBarrels, whoGotTNT, currentrange, randomNum))
 
             #send the new dms unless it was the last turn
             if roundNum < self.rounds:
@@ -164,14 +175,24 @@ class IceSlide:
         return
 
     #Creates a list of numbers that barrels will be collectable at 
-    def genBarrelNums(self, amount, currentrange):
+    def genBarrelNums(self, amount, currentrange, bullseye):
         barrelNums = []
         for _ in range(amount):
             num = random.randint(1, currentrange)
-            while num in barrelNums:
+            while num in barrelNums or num == bullseye:
                 num = random.randint(1, currentrange)
             barrelNums.append(num)
         return barrelNums
+
+    #Creates a list of numbers that TNT will spawn at
+    def genTNTNums(self, amount, currentrange, bullseye, barrelNums):
+        tntNums = []
+        for _ in range(amount):
+            num = random.randint(1, currentrange)
+            while num in barrelNums or num == bullseye or num in tntNums:
+                num = random.randint(1, currentrange)
+            tntNums.append(num)
+        return tntNums
 
     #determines if a message's content can be turned into an int or not
     def isInt(self, content):
@@ -211,6 +232,7 @@ class IceSlide:
             description=f'This game will have {self.rounds} rounds.\n\nFor every round, there will be a randomly generated number between a set range (starts 1-{self.minRange}).\n\nEach person will recieve a DM to guess what the number is.\n\nThe closer you are to the random number, the more points you get!\n\nThe range will increase every round, so hold on tight!\n\nThere will also be random numbers that barrels will spawn on each round, and if you guess one of those numbers you get extra points!\n\nThe person with the most points at the end of the {self.rounds} rounds wins!',
             colour=discord.Color.purple()
             )
+        embed.add_field(name='How the points are calculated:', value=f'The number of points you get from proximity:\n [The current range] -  [1.2 * ([your guess] - [the random number])]\n\nThe number of points you get from barrels:\n[The round number] * {self.barrelMultiplier}\n\nThe number of points you lose from TNT:\n[The round number] * {self.tntMultiplier}\n\nThe number of points you get from a bullseye:\n[The round number] * [The range]', inline=False)
         embed.set_footer(text=f'This channel will delete itself after {globalvars.SHUTDOWN_TIME_MINS} minutes if no more players have joined and the game has not started!')
         return embed
 
@@ -242,7 +264,7 @@ class IceSlide:
         return embed
 
     #Game embed for iceslide
-    def gameEmbed(self, roundNum, points, choices, pointsGained, whoGotBarrels, currentrange, randomNum):
+    def gameEmbed(self, roundNum, points, choices, pointsGained, whoGotBarrels, whoGotTNT, currentrange, randomNum):
         embed = discord.Embed(
             title=f'Round {roundNum}/{self.rounds}',
             description=f'The random number for the last round was: {randomNum}!',
@@ -254,11 +276,14 @@ class IceSlide:
         for player in self.players:
             bullseyeStr = ''
             barrelStr=''
+            tntStr = ''
             if choices[player] == randomNum:
                 bullseyeStr = '-Bullseye!'
             if player in whoGotBarrels:
                 barrelStr = '-Barrel Collected!'
-            embed.add_field(name=f'{player.display_name}', value=f'Number guessed: {choices[player]}{bullseyeStr}{barrelStr}', inline=True)
+            if player in whoGotTNT:
+                tntStr = '-Hit TNT!'
+            embed.add_field(name=f'{player.display_name}', value=f'Number guessed: {choices[player]}{bullseyeStr}{barrelStr}{tntStr}', inline=True)
         embed.add_field(name='Check your DMs!', value=f'You should recieve a message asking for a number between 1 and {currentrange}.', inline=False)
         for player in self.players:
             pointOrPoints = ''
@@ -267,11 +292,12 @@ class IceSlide:
             else:
                 pointOrPoints = 'points'
             plusPoints = ''
-            if points[player] > 0:
+            if pointsGained[player] > 0:
                 plusPoints = f'(+{pointsGained[player]})'
+            elif pointsGained[player] < 0:
+                plusPoints = f'({pointsGained[player]})'
             namesStrs.append(player.display_name)
             embed.add_field(name=f'{player.display_name}', value=f'{points[player]}  {pointOrPoints} {plusPoints}', inline=True)
-        embed.add_field(name='Check your DMs!', value=f'You should recieve a message asking for a number between 1 and {currentrange}.', inline=False)
         embed.add_field(name='Keep going!', value='If you would like to exit the game, put `shutdown` in the iceslide channel!', inline=False)
         embed.set_author(name=', '.join(namesStrs))
         return embed

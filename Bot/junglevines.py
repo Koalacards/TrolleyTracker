@@ -33,6 +33,7 @@ class JungleVines:
         currentvine = 1
         currenttime = 0
         totalbananas = 0
+        category = newChannel.category
 
         bananas = {}
         for x in range(1, self.vines):
@@ -56,13 +57,15 @@ class JungleVines:
             
             while moveDone == False:
                 if self.to.isTimeUp():
-                    await self.shutdown(newChannel, role)
+                    if newChannel in category.channels:
+                        await self.shutdown(newChannel, role)
                     return
                 message = None
                 try:
                     message = await self.client.wait_for('message', timeout=globalvars.SHUTDOWN_TIME)
                 except:
-                    await self.shutdown(newChannel, role)
+                    if newChannel in category.channels:
+                        await self.shutdown(newChannel, role)
                     return
                 if message.channel.id == newChannel.id and message.author == self.author:
                     content = message.content.lower()

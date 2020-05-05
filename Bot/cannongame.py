@@ -31,6 +31,7 @@ class CannonGame:
         #variables needed
         attempt = 1
         gameOver = False
+        category = channel.category
 
         #send the first embed
         await channel.send(embed=self.firstGameEmbed())
@@ -46,13 +47,15 @@ class CannonGame:
             #First get the numbers
             while(hasGuessed == False):
                 if self.to.isTimeUp():
-                    await self.shutdown(channel, role)
+                    if channel in category.channels:
+                        await self.shutdown(channel, role)
                     return
                 message = None
                 try:
                     message = await self.client.wait_for('message', timeout=globalvars.SHUTDOWN_TIME)
                 except:
-                    await self.shutdown(channel, role)
+                    if channel in category.channels:
+                        await self.shutdown(channel, role)
                     return
                 if message.channel.id == channel.id and message.author == self.author:
                     content = message.content.lower()
