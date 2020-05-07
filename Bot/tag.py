@@ -53,12 +53,10 @@ class Tag:
         firstGameEmbed.set_author(name=', '.join(namesStrs))
         await channel.send(embed=firstGameEmbed)
 
-        #sends the first DM to each user and creates a list of the dm channels for later
-        dmChannels=[]
+        #sends the first DM to each user
         for player in self.players:
             if player.dm_channel is None:
                 await player.create_dm()
-            dmChannels.append(player.dm_channel)
             await player.dm_channel.send(embed=self.dmEmbed(player, numRange))
         
 
@@ -67,55 +65,30 @@ class Tag:
             #the number each person picks in each turn
             choices = {}
 
-            #players that have yet to make a valid choice in the turn
+            #creates a client wait-for system with each player to grab the message for their next move
             undecidedPlayers = []
             for player in self.players:
-                undecidedPlayers.append(player)
+                undecidedPlayers.append(self.getMessage(player, channel, category, role, numRange, turn))
             
             #grabbing the messages from players
-            while len(undecidedPlayers) > 0:
-                if self.to.isTimeUp():
+            try:   
+                done, tasks = await  asyncio.wait(undecidedPlayers, return_when=asyncio.ALL_COMPLETED)
+                if len(tasks):
                     if channel in category.channels:
                         await self.shutdown(channel, role)
                     return
-                message = None
-                try:
-                    message = await self.client.wait_for('message', timeout=globalvars.SHUTDOWN_TIME)
-                except:
-                    if channel in category.channels:
-                        await self.shutdown(channel, role)
-                    return
-                if message.channel in dmChannels and message.author in self.players:
-                    content = message.content.lower()
-                    if self.isInt(content) == False:
-                        failedNumEmbed = discord.Embed(
-                            title='Whoops!',
-                            description='Sorry, your answer was not a number. Please try again!',
-                            colour=discord.Color.red()
-                        )
-                        await message.channel.send(embed=failedNumEmbed)
-                    else:
-                        chosenNum = int(content)
-                        #now that the message is definitely a number, determine if its between the targets
-                        if chosenNum < 1 or chosenNum > numRange:
-                            outOfBoundsEmbed = discord.Embed(
-                                title='Whoops!',
-                                description=f'Sorry, your not in the range of 1 to {numRange}. Please try again!',
-                                colour=discord.Color.red()
-                            )
-                            await message.channel.send(embed=outOfBoundsEmbed)
-                        else:
-                            logger.log(f'{message.author.display_name} has made their move for turn {turn} in {str(channel)}')
-                            await message.channel.send(':thumbsup:')
-                            if message.author in undecidedPlayers:
-                                undecidedPlayers.remove(message.author)
-                            choices[message.author] = chosenNum
-                
-                if message.channel == channel:
-                    content = message.content.lower()
-                    if content == 'shutdown':
-                        await self.shutdown(channel, role)
+                for task in done:
+                    result = task.result()
+                    if result is None:
                         return
+                    else:
+                        chosenNumber = result[0]
+                        player = result[1]
+                        choices[player] = chosenNumber
+            except:
+                if channel in category.channels:
+                    await self.shutdown(channel, role)
+                return
             
             #now that all players have decided, reset the timer and go onto the logic of the game
             self.to.resetTimer()
@@ -183,6 +156,51 @@ class Tag:
         await asyncio.sleep(15)
         await self.shutdown(channel, role)
         return
+
+    #Gets a message from one of the players in the game
+    async def getMessage(self, player, channel, category, role, numRange, turn):
+        while(True):
+            if self.to.isTimeUp():
+                if channel in category.channels:
+                    await self.shutdown(channel, role)
+                return None
+            message = None
+            try:
+                 message = await self.client.wait_for('message', timeout=globalvars.SHUTDOWN_TIME)
+            except:
+                if channel in category.channels:
+                    await self.shutdown(channel, role)
+                return None
+            if message.author == player and message.channel == player.dm_channel:
+                content = message.content.lower()
+                if self.isInt(content) == False:
+                    failedNumEmbed = discord.Embed(
+                        title='Whoops!',
+                        description='Sorry, your answer was not a number. Please try again!',
+                        colour=discord.Color.red()
+                    )
+                    await message.channel.send(embed=failedNumEmbed)
+                else:
+                    chosenNum = int(content)
+                    #now that the message is definitely a number, determine if its between the targets
+                    if chosenNum < 1 or chosenNum > numRange:
+                        outOfBoundsEmbed = discord.Embed(
+                                title='Whoops!',
+                                description=f'Sorry, your not in the range of 1 to {numRange}. Please try again!',
+                                colour=discord.Color.red()
+                            )
+                        await message.channel.send(embed=outOfBoundsEmbed)
+                    else:
+                        logger.log(f'{message.author.display_name} has made their move for turn {turn} in {str(channel)}')
+                        await message.channel.send(':thumbsup:')
+                        return [chosenNum, player]
+
+            if message.channel == channel and message.author == player:
+                content = message.content.lower()
+                if content == 'shutdown':
+                    if channel in category.channels:
+                        await self.shutdown(channel, role)
+                    return None
 
     #Deletes the channel and the role once the minigame is done or the game is manually exited
     async def shutdown(self, channel, role):

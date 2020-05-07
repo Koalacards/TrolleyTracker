@@ -21,8 +21,8 @@ class IceSlide:
         self.minRange = 5
         self.barrelMultiplier = 3
         self.barrelFreqDivider = 5
-        self.bullseyeMultiplier = 5
-        self.tntMultiplier = 5
+        self.bullseyeMultiplier = self.minRange
+        self.tntMultiplier = 3
         self.tntFreqDivider = 10
         self.context = context
         self.client = client
@@ -43,12 +43,10 @@ class IceSlide:
         #send the first game message
         await channel.send(embed=self.firstGameEmbed(roundNum, points, currentrange))
 
-        #collects dm channels and sends the first DM message to all the players
-        dmChannels = []
+        #sends the first DM message to all the players
         for player in self.players:
             if player.dm_channel is None:
                 await player.create_dm()
-            dmChannels.append(player.dm_channel)
             await player.dm_channel.send(embed=self.dmEmbed(player, currentrange))
 
         #the full game loop
@@ -62,60 +60,39 @@ class IceSlide:
             choices = {}
 
 
-            #list of players that have not dm'd back a number to the bot
+            #creates a client wait-for system with each player to grab the message for their next move
             undecidedPlayers = []
             for player in self.players:
-                undecidedPlayers.append(player)
+                undecidedPlayers.append(self.getMessage(player, channel, category, role, currentrange, roundNum))
 
-            #Bot looks for numbers in the Dm's or a 'shutdown' in the main iceslide channel
-            while len(undecidedPlayers) > 0:
-                if self.to.isTimeUp():
+            #grabs each number from each user
+            try:   
+                done, tasks = await asyncio.wait(undecidedPlayers, return_when=asyncio.ALL_COMPLETED)
+                if len(tasks):
                     if channel in category.channels:
                         await self.shutdown(channel, role)
                     return
-                message = None
-                try:
-                    message = await self.client.wait_for('message', timeout=globalvars.SHUTDOWN_TIME)
-                except:
-                    if channel in category.channels:
-                        await self.shutdown(channel, role)
-                    return
-                if message.channel in dmChannels and message.author in self.players:
-                    content = message.content.lower()
-                    if self.isInt(content) == False:
-                        failedNumEmbed = discord.Embed(
-                            title='Whoops!',
-                            description='Sorry, your answer was not a number. Please try again!',
-                            colour=discord.Color.red()
-                        )
-                        await message.channel.send(embed=failedNumEmbed)
-                    else:
-                        chosenNum = int(content)
-                        #now that the message is definitely a number, determine if its between the targets
-                        if chosenNum < 1 or chosenNum > currentrange:
-                            outOfBoundsEmbed = discord.Embed(
-                                title='Whoops!',
-                                description=f'Sorry, your not in the range of 1 to {currentrange}. Please try again!',
-                                colour=discord.Color.red()
-                            )
-                            await message.channel.send(embed=outOfBoundsEmbed)
-                        else:
-                            logger.log(f'{message.author.display_name} has made their move for round {roundNum} in {str(channel)}')
-                            await message.channel.send(':thumbsup:')
-                            undecidedPlayers.remove(message.author)
-                            choices[message.author] = chosenNum
-                if message.channel == channel:
-                    content = message.content.lower()
-                    if content == 'shutdown':
-                        await self.shutdown(channel, role)
+                for task in done:
+                    result = task.result()
+                    if result is None:
                         return
+                    else:
+                        chosenNumber = result[0]
+                        player = result[1]
+                        choices[player] = chosenNumber
+            except:
+                if channel in category.channels:
+                    await self.shutdown(channel, role)
+                return
+                
 
             #once all of the numbers have been collected, time to add the points
 
             pointsGained = {}
             for player, guess in choices.items():
                 #points gained from being close to the random number
-                calculatedNum = int(max(0, currentrange - math.floor((1.2 * abs(guess - randomNum)))))
+                calculatedNum = int(max(0, (currentrange - math.floor(1.2 * abs(guess - randomNum)))))
+                print(calculatedNum)
                 if guess in barrelNums:
                     whoGotBarrels.append(player)
                     #points gained from collecting a barrel
@@ -173,6 +150,54 @@ class IceSlide:
         await asyncio.sleep(15)
         await self.shutdown(channel, role)
         return
+
+    #Gets a message from one of the players in the game
+    async def getMessage(self, player, channel, category, role, currentrange, roundNum):
+        while(True):
+            if self.to.isTimeUp():
+                if channel in category.channels:
+                    await self.shutdown(channel, role)
+                return None
+            message = None
+            try:
+                message = await self.client.wait_for('message', timeout=globalvars.SHUTDOWN_TIME)
+            except:
+                if channel in category.channels:
+                    await self.shutdown(channel, role)
+                return None
+            if message.author == player and message.channel == player.dm_channel:
+                content = message.content.lower()
+                if self.isInt(content) == False:
+                    failedNumEmbed = discord.Embed(
+                        title='Whoops!',
+                        description='Sorry, your answer was not a number. Please try again!',
+                        colour=discord.Color.red()
+                    )
+                    await message.channel.send(embed=failedNumEmbed)
+                else:
+                    chosenNum = int(content)
+                    #now that the message is definitely a number, determine if its between the targets
+                    if chosenNum < 1 or chosenNum > currentrange:
+                        outOfBoundsEmbed = discord.Embed(
+                            title='Whoops!',
+                            description=f'Sorry, your not in the range of 1 to {currentrange}. Please try again!',
+                            colour=discord.Color.red()
+                        )
+                        await message.channel.send(embed=outOfBoundsEmbed)
+                    else:
+                        logger.log(f'{message.author.display_name} has made their move for round {roundNum} in {str(channel)}')
+                        await message.channel.send(':thumbsup:')
+                        return [chosenNum, player]
+
+            if message.channel == channel and message.author == player:
+                content = message.content.lower()
+                if content == 'shutdown':
+                    if channel in category.channels:
+                        await self.shutdown(channel, role)
+                    return None
+                
+
+        
 
     #Creates a list of numbers that barrels will be collectable at 
     def genBarrelNums(self, amount, currentrange, bullseye):

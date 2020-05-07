@@ -172,8 +172,6 @@ class MiniGame:
         await self.game.game(newChannel, role)
         pass         
 
-        pass
-
     def getChannelNum(self):
         #Gets the random number for the channel
         num = random.randint(1, 9999)
