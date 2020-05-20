@@ -8,6 +8,8 @@ __pycache__/
 
 #Stuff
 confidential.py
+.vscode
+.idea
 
 # Distribution / packaging
 .Python

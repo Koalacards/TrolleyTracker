@@ -6,7 +6,7 @@ from timeout import Timeout
 import globalvars
 import logger
 
-#Trolley game of JungleVines
+#Trolley game of CannonGame
 #-Players: 1
 #-Requires DM's to be open: no
 #-Length of game: short

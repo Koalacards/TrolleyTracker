@@ -1,6 +1,7 @@
 import discord
 from discord.ext import commands
 import logger
+import asyncio
 
 from minigame import MiniGame
 import helpEmbed
@@ -27,6 +28,30 @@ async def invite(ctx, *, bs):
     #do nothing lol
     pass
 
+#Allow users to put in suggestions directly through the bot
+@client.command()
+async def suggest(ctx, *, suggestion):
+    if ctx.message.channel.id not in globalvars.COMMAND_CHANNEL_IDS:
+        return
+    await ctx.message.delete()
+    suggestion_channel = discord.utils.get(ctx.guild.channels, id=globalvars.SUGGESTION_CHANNEL)
+    if suggestion is not None and suggestion != '':
+        recievedSuggestionEmbed = discord.Embed(
+            title=f'Thank you, your suggestion has been recorded!',
+            colour=discord.Color.green()
+        )
+        message = await ctx.send(embed=recievedSuggestionEmbed)
+        suggestionEmbed = discord.Embed(
+            title='New Suggestion!',
+            description = f'**From**: {ctx.message.author.display_name} \n`{str(suggestion)}`',
+            colour=discord.Color.purple()
+        )
+        await suggestion_channel.send(embed=suggestionEmbed)
+
+        await asyncio.sleep(3)
+
+        await message.delete()
+
 @client.command()
 async def clear(ctx, amount=20):
     await ctx.message.delete()
@@ -36,6 +61,8 @@ async def clear(ctx, amount=20):
 
 @client.command()
 async def help(ctx):
+    if ctx.message.channel.id not in globalvars.COMMAND_CHANNEL_IDS:
+        return
     if hasPermission(ctx.message.author):
         await ctx.channel.send(embed=helpEmbed.modHelpEmbed())
         logger.log(f'mod help command called by {ctx.message.author.display_name}')
@@ -45,6 +72,8 @@ async def help(ctx):
 
 @client.command()
 async def noinvites(ctx):
+    if ctx.message.channel.id not in globalvars.COMMAND_CHANNEL_IDS:
+        return
     guild = ctx.message.guild
     #check to see if the user already has the role
     author = ctx.message.author
@@ -63,18 +92,28 @@ async def noinvites(ctx):
     #add the role to the member
     await author.add_roles(noInvitesRole)
     logger.log(f'the noinvites role has been added to {author.display_name}')
-    await ctx.message.channel.send(f'Role has been added {author.display_name}! Use `{globalvars.PREFIX}invites` to remove the noinvites role.')
+    embed=discord.Embed(
+        title=f'The noinvites role has been added, {author.display_name}!\n Use `{globalvars.PREFIX}invites` to remove the noinvites role.',
+        colour=discord.Color.green()
+    )
+    await ctx.message.channel.send(embed=embed)
 
 
 @client.command()
 async def invites(ctx):
+    if ctx.message.channel.id not in globalvars.COMMAND_CHANNEL_IDS:
+        return
     author = ctx.message.author
     channel = ctx.message.channel
     for role in author.roles:
         if str(role) == 'noinvites':
             await author.remove_roles(role)
             logger.log(f'the noinvites role has been removed from {author.display_name}')
-            await channel.send(f'The noinvites role has been removed {author.display_name}! Use `{globalvars.PREFIX}noinvites` to re-add the noinvites role')
+            embed=discord.Embed(
+                title=f'The noinvites role has been removed, {author.display_name}!\n Use `{globalvars.PREFIX}noinvites` to re-add the noinvites role.',
+                colour=discord.Color.green()
+            )
+            await channel.send(embed=embed)
             return
     await channel.send(f'You already dont have the noinvites role, {author.display_name}!')
     
