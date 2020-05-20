@@ -20,7 +20,7 @@ client.remove_command('help')
 
 @client.event
 async def on_ready():
-    print('TrolleyTracker v0.5')
+    print('TrolleyTracker v0.5.1')
 
 #This isnt supposed to do anything, this is exclusively to remove an error from the console
 @client.command()
