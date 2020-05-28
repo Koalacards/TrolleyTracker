@@ -86,18 +86,14 @@ class CannonGame:
                                 )
                                 await message.channel.send(embed=notInRangeEmbed)
                             else:
-                                logger.log(f'{self.author.display_name} has entered a guess for attempt {attempt}  in {str(channel)}')
+                                await logger.log(f'{self.author.display_name} has entered a guess for attempt {attempt}  in {str(channel)}', channel.guild)
                                 hasGuessed = True
-
-                    elif content == 'shutdown':
-                        await self.shutdown(channel, role)
-                        return
             
             self.to.resetTimer()
             
             #Check to see if the game is over, if not move to the next turn
             if xGuess >= self.xMin and xGuess <= self.xMax and yGuess >= self.yMin and yGuess <= self.yMax:
-                logger.log(f'{self.author.display_name} has won cannongame in {str(channel)}')
+                await logger.log(f'{self.author.display_name} has won cannongame in {str(channel)}', channel.guild)
                 await channel.send(embed=self.endingEmbed(attempt, xGuess, yGuess))
                 await asyncio.sleep(15)
                 await self.shutdown(channel, role)
@@ -122,7 +118,7 @@ class CannonGame:
 
     #Deletes the channel and the role once the minigame is done or the game is manually exited
     async def shutdown(self, channel, role):
-        logger.log(f'{str(channel)} is shutting down')
+        await logger.log(f'{str(channel)} is shutting down', channel.guild)
         await role.delete()
         embed = discord.Embed(title='Shutting down...', colour=discord.Color.red())
         await channel.send(embed=embed)

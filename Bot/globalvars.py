@@ -1,6 +1,6 @@
 #just a bunch of global variables
 
-COMMAND_CHANNEL_IDS = [694015251825557606]
+COMMAND_CHANNEL_NAME='trolley-commands'
 
 PREFIX = 'trolley '
 
@@ -12,7 +12,9 @@ ICE_SLIDE_NUMS=[]
 
 CANNON_NUMS = []
 
-GAMES_LIST = ['junglevines', 'iceslide', 'tag', 'cannongame']
+MATCH_MINNIE_NUMS = []
+
+GAMES_LIST = ['junglevines', 'iceslide', 'tag', 'cannongame', 'matchminnie']
 
 EXTRA_PERMS = ['Moderators', 'KoalaBot']
 
@@ -24,4 +26,11 @@ SHUTDOWN_TIME = 120
 #the shutdown time in mintes
 SHUTDOWN_TIME_MINS = 2
 
-SUGGESTION_CHANNEL = 712468856312168448
+SUGGESTION_CHANNEL_NAME='trolley-suggestions'
+
+LOGS_CHANNEL_NAME='trolley-logs'
+
+LOGS_CHANNEL=None
+
+#number of games each user is allowed to be in
+NUM_GAMES_ALLOWED = 3

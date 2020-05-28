@@ -20,7 +20,7 @@ client.remove_command('help')
 
 @client.event
 async def on_ready():
-    print('TrolleyTracker v0.5.1')
+    print('TrolleyTracker v0.5.2')
 
 #This isnt supposed to do anything, this is exclusively to remove an error from the console
 @client.command()
@@ -31,10 +31,10 @@ async def invite(ctx, *, bs):
 #Allow users to put in suggestions directly through the bot
 @client.command()
 async def suggest(ctx, *, suggestion):
-    if ctx.message.channel.id not in globalvars.COMMAND_CHANNEL_IDS:
+    if ctx.message.channel.name != globalvars.COMMAND_CHANNEL_NAME:
         return
     await ctx.message.delete()
-    suggestion_channel = discord.utils.get(ctx.guild.channels, id=globalvars.SUGGESTION_CHANNEL)
+    suggestion_channel = discord.utils.get(ctx.guild.channels, name=globalvars.SUGGESTION_CHANNEL_NAME)
     if suggestion is not None and suggestion != '':
         recievedSuggestionEmbed = discord.Embed(
             title=f'Thank you, your suggestion has been recorded!',
@@ -52,34 +52,32 @@ async def suggest(ctx, *, suggestion):
 
         await message.delete()
 
-@client.command()
-async def clear(ctx, amount=20):
-    await ctx.message.delete()
-    if hasPermission(ctx.message.author):
-        await ctx.channel.purge(limit=amount)
-        logger.log(f'{amount} messages cleared by {ctx.message.author.display_name}')
 
 @client.command()
 async def help(ctx):
-    if ctx.message.channel.id not in globalvars.COMMAND_CHANNEL_IDS:
+    if ctx.message.channel.name != globalvars.COMMAND_CHANNEL_NAME:
         return
     if hasPermission(ctx.message.author):
         await ctx.channel.send(embed=helpEmbed.modHelpEmbed())
-        logger.log(f'mod help command called by {ctx.message.author.display_name}')
+        await logger.log(f'mod help command called by {ctx.message.author.display_name}', ctx.message.guild)
     else:
         await ctx.channel.send(embed=helpEmbed.regHelpEmbed())
-        logger.log(f'regular help command called by {ctx.message.author.display_name}')
+        await logger.log(f'regular help command called by {ctx.message.author.display_name}', ctx.message.guild)
 
 @client.command()
 async def noinvites(ctx):
-    if ctx.message.channel.id not in globalvars.COMMAND_CHANNEL_IDS:
+    if ctx.message.channel.name != globalvars.COMMAND_CHANNEL_NAME:
         return
     guild = ctx.message.guild
     #check to see if the user already has the role
     author = ctx.message.author
     for role in author.roles:
         if str(role) == 'noinvites':
-            await ctx.message.channel.send(f'You already have the noinvites role, {author.display_name}!')
+            alreadyHaveRoleEmbed = discord.Embed(
+                title=f'You already have the noinvites role, {author.display_name}!',
+                colour=discord.Color.red()
+            )
+            await ctx.message.channel.send(embed=alreadyHaveRoleEmbed)
             return
     #check to see if there is a noinvites role set in place
     noInvitesRole = None
@@ -91,7 +89,7 @@ async def noinvites(ctx):
         noInvitesRole = await guild.create_role(name='noinvites')
     #add the role to the member
     await author.add_roles(noInvitesRole)
-    logger.log(f'the noinvites role has been added to {author.display_name}')
+    await logger.log(f'the noinvites role has been added to {author.display_name}', guild)
     embed=discord.Embed(
         title=f'The noinvites role has been added, {author.display_name}!\n Use `{globalvars.PREFIX}invites` to remove the noinvites role.',
         colour=discord.Color.green()
@@ -101,33 +99,37 @@ async def noinvites(ctx):
 
 @client.command()
 async def invites(ctx):
-    if ctx.message.channel.id not in globalvars.COMMAND_CHANNEL_IDS:
+    if ctx.message.channel.name != globalvars.COMMAND_CHANNEL_NAME:
         return
     author = ctx.message.author
     channel = ctx.message.channel
     for role in author.roles:
         if str(role) == 'noinvites':
             await author.remove_roles(role)
-            logger.log(f'the noinvites role has been removed from {author.display_name}')
+            await logger.log(f'the noinvites role has been removed from {author.display_name}', ctx.message.guild)
             embed=discord.Embed(
                 title=f'The noinvites role has been removed, {author.display_name}!\n Use `{globalvars.PREFIX}noinvites` to re-add the noinvites role.',
                 colour=discord.Color.green()
             )
             await channel.send(embed=embed)
             return
-    await channel.send(f'You already dont have the noinvites role, {author.display_name}!')
+    alreadyHaveRoleEmbed = discord.Embed(
+        title=f'You already dont have the noinvites role, {author.display_name}!',
+        colour=discord.Color.red()
+    )
+    await channel.send(embed=alreadyHaveRoleEmbed)
     
 @client.command()
 async def reset(ctx, channelName):
     await ctx.message.delete()
     if hasPermission(ctx.message.author):
-        logger.log(f'{ctx.message.author.display_name} has reset channel {channelName}')
+        await logger.log(f'{ctx.message.author.display_name} has reset channel {channelName}', ctx.message.guild)
         guild = ctx.message.guild
         for role in guild.roles:
             if str(role) == channelName:
                 await role.delete()
 
-        for channel in ctx.message.channel.category.channels:
+        for channel in guild.channels:
             if channel.name == channelName:
                 await channel.delete()
 
@@ -139,20 +141,22 @@ async def reset(ctx, channelName):
         if channelName.split('-')[0] == 'iceslide':
             globalvars.ICE_SLIDE_NUMS.remove(number)
         if channelName.split('-')[0] == 'cannongame':
-            globalvars.CANNON_NUMS.remove(number)     
+            globalvars.CANNON_NUMS.remove(number)
+        if channelName.split('-')[0] == 'matchminnie':
+            globalvars.MATCH_MINNIE_NUMS.remove(number)        
 
 @client.command()
 async def resetall(ctx):
     await ctx.message.delete()
     if hasPermission(ctx.message.author):
-        logger.log(f'{ctx.message.author.display_name} has reset all channels')
+        await logger.log(f'{ctx.message.author.display_name} has reset all channels', ctx.message.guild)
         guild = ctx.message.guild
         for role in guild.roles:
             for gameStr in globalvars.GAMES_LIST:
                 if gameStr in str(role):
                     await role.delete()
         
-        for channel in ctx.message.channel.category.channels:
+        for channel in guild.channels:
             for gameStr in globalvars.GAMES_LIST:
                 if gameStr in channel.name:
                     await channel.delete()
@@ -161,51 +165,83 @@ async def resetall(ctx):
 
 @client.command()
 async def play(ctx, *, game):
-    if ctx.message.channel.id not in globalvars.COMMAND_CHANNEL_IDS:
+    if ctx.message.channel.name != globalvars.COMMAND_CHANNEL_NAME:
+        print(ctx.message.channel.name)
         return
     gamelower = game.lower()
     gamestripped = gamelower.strip()
     gamefinal = gamestripped.replace(' ', '')
+    inAnotherGameEmbed = discord.Embed(
+        title=f'Sorry {ctx.message.author.display_name}, you are already in {globalvars.NUM_GAMES_ALLOWED} active minigame channel(s)! You must finish your other game(s) before starting this one.',
+        colour=discord.Color.red()
+    )
     await ctx.message.delete()
     if gamefinal == 'junglevines':
-        if checkUserEligible(ctx.message.author) == False:
-            await ctx.send(f'Sorry <@{ctx.message.author.id}>, you are already in an active minigame channel! You must complete that game to be a part of another one.')
+        if numGamesPlaying(ctx.message.author) >= globalvars.NUM_GAMES_ALLOWED:
+            message = await ctx.send(embed=inAnotherGameEmbed)
+            await asyncio.sleep(5)
+            await message.delete()
             return
-        logger.log(f'new game of Jungle Vines created by {ctx.message.author.display_name}')
+        await logger.log(f'new game of Jungle Vines created by {ctx.message.author.display_name}', ctx.message.guild)
         newGame = MiniGame(ctx, client, gamefinal, 1, 1)
         await newGame.createChannel()
         return
     elif gamefinal == 'iceslide':
-        if checkUserEligible(ctx.message.author) == False:
-            await ctx.send(f'Sorry <@{ctx.message.author.id}>, you are already in an active minigame channel! You must complete that game to be a part of another one.')
+        if numGamesPlaying(ctx.message.author) >= globalvars.NUM_GAMES_ALLOWED:
+            message = await ctx.send(embed=inAnotherGameEmbed)
+            await asyncio.sleep(5)
+            await message.delete()
             return
-        logger.log(f'new game of Ice Slide created by {ctx.message.author.display_name}')
+        await logger.log(f'new game of Ice Slide created by {ctx.message.author.display_name}', ctx.message.guild)
         newGame = MiniGame(ctx, client, gamefinal, 2, 8)
         await newGame.createChannel()
     elif gamefinal == 'tag':
-        if checkUserEligible(ctx.message.author) == False:
-            await ctx.send(f'Sorry <@{ctx.message.author.id}>, you are already in an active minigame channel! You must complete that game to be a part of another one.')
+        if numGamesPlaying(ctx.message.author) >= globalvars.NUM_GAMES_ALLOWED:
+            message = await ctx.send(embed=inAnotherGameEmbed)
+            await asyncio.sleep(5)
+            await message.delete()
             return
-        logger.log(f'new game of Tag created by {ctx.message.author.display_name}')
+        await logger.log(f'new game of Tag created by {ctx.message.author.display_name}', ctx.message.guild)
         newGame = MiniGame(ctx, client, gamefinal, 2, 2)
         await newGame.createChannel()
     elif gamefinal == 'cannongame':
-        if checkUserEligible(ctx.message.author) == False:
-            await ctx.send(f'Sorry <@{ctx.message.author.id}>, you are already in an active minigame channel! You must complete that game to be a part of another one.')
+        if numGamesPlaying(ctx.message.author) >= globalvars.NUM_GAMES_ALLOWED:
+            message = await ctx.send(embed=inAnotherGameEmbed)
+            await asyncio.sleep(5)
+            await message.delete()
             return
-        logger.log(f'new game of Cannon Game created by {ctx.message.author.display_name}')
+        await logger.log(f'new game of Cannon Game created by {ctx.message.author.display_name}', ctx.message.guild)
         newGame = MiniGame(ctx, client, gamefinal, 1, 1)
         await newGame.createChannel()
+    elif gamefinal == 'matchminnie':
+        message = await ctx.send('Uh oh, you found my secret new project! Don\'t tell anyone shhhh')
+        await asyncio.sleep(2)
+        await message.delete()
+        '''
+        if numGamesPlaying(ctx.message.author) >= globalvars.NUM_GAMES_ALLOWED:
+            message = await ctx.send(embed=inAnotherGameEmbed)
+            await asyncio.sleep(5)
+            await message.delete()
+            return
+        await logger.log(f'new game of Match Minnie created by {ctx.message.author.display_name}', ctx.message.guild)
+        newGame = MiniGame(ctx, client, gamefinal, 2, 4)
+        await newGame.createChannel()
+        '''
     else:
-        await ctx.send(f'Invalid game selected. Enter `{globalvars.PREFIX}help` for help.')
+        invalidGameEmbed = discord.Embed(
+            title=f'Invalid game selected. Enter `{globalvars.PREFIX}help` for help.',
+            colour=discord.Color.red()
+        )
+        await ctx.send(embed=invalidGameEmbed)
 
 #Checks to see if a user is eligible to be a part of a 
-def checkUserEligible(member):
+def numGamesPlaying(member):
+    count = 0
     for role in member.roles:
         for gameStr in globalvars.GAMES_LIST:
             if gameStr in str(role):
-                return False
-    return True
+                count = count + 1
+    return count
 
 #checks to see if the user that entered the command has permission to
 def hasPermission(member):
@@ -213,4 +249,60 @@ def hasPermission(member):
         if str(role) in globalvars.EXTRA_PERMS:
             return True
     return False
+
+#determines if a message's content can be turned into an int or not
+def isInt(content):
+    try:
+        int(content)
+        return True
+    except:
+        return False
+
+
+@client.event
+async def on_message(message):
+    if message.content == 'shutdown':
+        channelName = message.channel.name
+        channelSplit = channelName.split('-')
+        if len(channelSplit) != 2 or channelSplit[0] not in globalvars.GAMES_LIST or isInt(channelSplit[1]) == False:
+            return
+
+        prefix = channelSplit[0]
+        number = int(channelSplit[1])
+
+        numslist = []
+
+        if prefix == 'junglevines':
+            numslist = globalvars.JUNGLE_NUMS
+        elif prefix == 'tag':
+            numslist = globalvars.TAG_NUMS
+        elif prefix == 'iceslide':
+            numslist = globalvars.ICE_SLIDE_NUMS
+        elif prefix == 'cannongame':
+            numslist = globalvars.CANNON_NUMS
+        elif prefix == 'matchminnie':
+            numslist = globalvars.MATCH_MINNIE_NUMS
+        else:
+            return
+
+        await logger.log(f'{str(message.channel)} is shutting down', message.guild)
+
+        embed = discord.Embed(title='Shutting down...', colour=discord.Color.red())
+        await message.channel.send(embed=embed)
+        await asyncio.sleep(2)
+
+        if number in numslist:
+            numslist.remove(number)
+
+        guild = message.guild
+        for gameStr in globalvars.GAMES_LIST:
+            if gameStr in channelName:
+                await message.channel.delete()
+
+        
+        for role in guild.roles:
+            if str(role) == channelName:
+                await role.delete()
+
+    await client.process_commands(message)
 client.run(confidential.RUN_ID)

@@ -7,6 +7,7 @@ from junglevines import JungleVines
 from tag import Tag
 from iceslide import IceSlide
 from cannongame import CannonGame
+from matchminnie import MatchMinnie
 import globalvars
 import logger
 
@@ -41,6 +42,9 @@ class MiniGame:
         elif self.prefix == 'cannongame':
             self.game = CannonGame(self.context, self.client)
             self.numslist = globalvars.CANNON_NUMS
+        elif self.prefix == 'matchminnie':
+            self.game = MatchMinnie(self.context, self.client)
+            self.numslist = globalvars.MATCH_MINNIE_NUMS
             
         
         #Gets the number for the game channel and role 
@@ -59,7 +63,7 @@ class MiniGame:
         role = await guild.create_role(name=channelRoleName)
         await author.add_roles(role)
 
-        logger.log(f'new role {channelRoleName} has been created')
+        await logger.log(f'new role {channelRoleName} has been created', guild)
 
 
         #Next, the channel is made in the category that they sent the message in
@@ -69,7 +73,7 @@ class MiniGame:
         )
         category = newChannel.category
 
-        logger.log(f'new channel {channelRoleName} has been created')
+        await logger.log(f'new channel {channelRoleName} has been created', guild)
 
         #Then, permissions are set so that the created role can send messages in the channel
         #The rest can read the messages if they want to to see how the game is going
@@ -88,7 +92,7 @@ class MiniGame:
                 playersStr = f'{self.minPlayers}-{self.maxPlayers}'
             embed = discord.Embed(
                 title=author.display_name,
-                description=f'This game requires {playersStr} players, so you will need to invite other user(s) to this channel! To do that, enter `{globalvars.PREFIX}invite [USER]` to add the user to the channel.\n\nIf you need to leave, enter "shutdown".',
+                description=f'This game requires {playersStr} players, so you will need to invite other user(s) to this channel! To do that, enter `{globalvars.PREFIX}invite [USER]` to add the user to the channel.\n\nIf you need to leave, enter `shutdown`.',
                 colour=discord.Color.purple()
             )
             embed.set_footer(text=f'This channel will delete itself after {globalvars.SHUTDOWN_TIME_MINS} minutes if nobody has been invited.')
@@ -111,8 +115,6 @@ class MiniGame:
 
                 if f'{globalvars.PREFIX}invite' in content:
                     newUsers = await self.inviteUsers(message, newChannel, role)
-                elif content == 'shutdown':
-                    await self.shutdown(newChannel, role)
                 else:
                     pass
 
@@ -145,7 +147,7 @@ class MiniGame:
             if message.channel.id == newChannel.id and message.author in self.players:
                 content = message.content.lower()
                 if content == 'start':
-                    logger.log(f'{message.author.display_name} has typed start in {channelRoleName}')
+                    await logger.log(f'{message.author.display_name} has typed start in {channelRoleName}', guild)
                     if message.author in unreadyPlayers:
                         unreadyPlayers.remove(message.author)
                     
@@ -154,12 +156,14 @@ class MiniGame:
                         for member in unreadyPlayers:
                             unreadyStrs.append(member.display_name)
                         unreadyStr = ', '.join(unreadyStrs)
-                        await newChannel.send(f'{message.author.display_name} is ready to play! Still waiting on: {unreadyStr}')
+                        readyToPlayEmbed= discord.Embed(
+                            title=f'{message.author.display_name} is ready to play! Still waiting on: {unreadyStr}',
+                            colour=discord.Color.green()
+                        )
+                        await newChannel.send(embed=readyToPlayEmbed)
                 elif content == 'rules':
-                    logger.log(f'{message.author.display_name} has typed rules in {channelRoleName}')
+                    await logger.log(f'{message.author.display_name} has typed rules in {channelRoleName}', guild)
                     await newChannel.send(embed=self.game.rulesEmbed())
-                elif content == 'shutdown':
-                    await self.shutdown(newChannel, role)
                 elif f'{globalvars.PREFIX}invite' in content and self.numPlayers < self.maxPlayers:
                     newUsers = await self.inviteUsers(message, newChannel, role)
                     for user in newUsers:
@@ -168,7 +172,7 @@ class MiniGame:
                     pass
         self.to.resetTimer()
         self.game.updateVars(self.players, self.to, self.number)
-        logger.log(f'game sequence for {channelRoleName} has started')
+        await logger.log(f'game sequence for {channelRoleName} has started', guild)
         await self.game.game(newChannel, role)
         pass         
 
@@ -224,13 +228,19 @@ class MiniGame:
                         colour = discord.Color.red()
                     )
                     await channel.send(embed=embed)
+                elif self.numGamesPlaying(member) >= globalvars.NUM_GAMES_ALLOWED:
+                    inAnotherGameEmbed = discord.Embed(
+                        title=f'{member.display_name} is already in {globalvars.NUM_GAMES_ALLOWED} active minigame channel(s)! They must complete their other game(s) before entering this one.',
+                        colour=discord.Color.red()
+                    )
+                    await channel.send(embed=inAnotherGameEmbed)
                 else:
                     #adds the player to the game and pings them
-                    logger.log(f'{member.display_name} has been invited to channel {str(channel)}')
+                    await logger.log(f'{member.display_name} has been invited to channel {str(channel)}', channel.guild)
                     self.to.resetTimer()
                     self.players.append(member)
                     await member.add_roles(role)
-                    await channel.set_permissions(member, read_messages = True, send_messages = True)
+                    await channel.set_permissions(member, read_messages = True, send_messages = True)     
                     await channel.send(f'Welcome, {member.mention}!')
                     self.numPlayers = self.numPlayers + 1
                     newUsers.append(member)
@@ -238,7 +248,6 @@ class MiniGame:
 
     #Deletes the channel and the role
     async def shutdown(self, channel, role):
-        logger.log(f'{str(channel)} is shutting down')
         await role.delete()
         embed = discord.Embed(title='Shutting down...', colour=discord.Color.red())
         await channel.send(embed=embed)
@@ -253,3 +262,12 @@ class MiniGame:
             if str(role) == 'noinvites':
                 return False
         return True
+
+    #Checks to see if a user is eligible to be a part of a 
+    def numGamesPlaying(self, member):
+        count = 0
+        for role in member.roles:
+            for gameStr in globalvars.GAMES_LIST:
+                if gameStr in str(role):
+                    count = count + 1
+        return count

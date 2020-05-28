@@ -66,21 +66,23 @@ class JungleVines:
                 except:
                     if newChannel in category.channels:
                         await self.shutdown(newChannel, role)
+
                     return
                 if message.channel.id == newChannel.id and message.author == self.author:
                     content = message.content.lower()
                     if content in options:
                         numSeconds = int(message.content)
                         if numSeconds > self.time - currenttime:
-                            await newChannel.send('You do not have enough time to make this move!')
+                            notEnoughTimeEmbed = discord.Embed(
+                                title='You do not have enough time to make this move!',
+                                colour=discord.Color.red()
+                            )
+                            await newChannel.send(embed=notEnoughTimeEmbed)
                             numSeconds = 0
                         else:
-                            logger.log(f'{self.author.display_name} has made their move in second {currenttime} in channel {str(newChannel)}')
+                            await logger.log(f'{self.author.display_name} has made their move in second {currenttime} in channel {str(newChannel)}', newChannel.guild)
                             moveDone = True
                             self.to.resetTimer()
-                    elif message.content == 'shutdown':
-                        await self.shutdown(newChannel, role)
-                        return
                     else:
                         pass
 
@@ -88,10 +90,14 @@ class JungleVines:
 
             #first check to see if numSeconds is legal
             if numSeconds != 1 and numSeconds != 2 and numSeconds != 3:
-                await newChannel.send('Something has gone terribly wrong.')
-                await asyncio.sleep(15)
+                terriblyWrongEmbed = discord.Embed(
+                    title='Something has gone terribly wrong.',
+                    colour=discord.Color.red()
+                )
+                await newChannel.send(embed=terriblyWrongEmbed)
+                await self.shutdown(newChannel, role)
                 return
-            
+                
             #The probability that a successful jump will occur. the spider category is the probability
             #that the user hits a spider and is multiplied for every addition second the user takes
             probabilities = {
@@ -138,14 +144,14 @@ class JungleVines:
 
             #check for the end of the game
             if currentvine == self.vines:
-                logger.log(f'{self.author.display_name} has won Jungle Vines in {str(newChannel)}')
+                await logger.log(f'{self.author.display_name} has won Jungle Vines in {str(newChannel)}', newChannel.guild)
                 await newChannel.send(embed=self.endingEmbed(currenttime, currentvine, totalbananas, True))
                 await asyncio.sleep(15)
                 await self.shutdown(newChannel, role)
                 return
 
             if currenttime == self.time:
-                logger.log(f'{self.author.display_name} has lost Jungle Vines in {str(newChannel)}')
+                await logger.log(f'{self.author.display_name} has lost Jungle Vines in {str(newChannel)}', newChannel.guild)
                 await newChannel.send(embed=self.endingEmbed(currenttime, currentvine, totalbananas, False))
                 await asyncio.sleep(15)
                 await self.shutdown(newChannel, role)
@@ -169,7 +175,7 @@ class JungleVines:
 
     #Deletes the channel and the role
     async def shutdown(self, channel, role):
-        logger.log(f'{str(channel)} is shutting down')
+        await logger.log(f'{str(channel)} is shutting down', channel.guild)
         await role.delete()
         embed = discord.Embed(title='Shutting down...', colour=discord.Color.red())
         await channel.send(embed=embed)

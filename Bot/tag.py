@@ -150,8 +150,6 @@ class Tag:
                 winningNum = cones[player]
             elif cones[player] == winningNum and winner is not None:
                 winner = None
-        for winners in winner:
-            logger.log(f'{winners.display_name} has won in channel {str(channel)}')
         await channel.send(embed=self.endingEmbed(cones, winner))
         await asyncio.sleep(15)
         await self.shutdown(channel, role)
@@ -191,20 +189,13 @@ class Tag:
                             )
                         await message.channel.send(embed=outOfBoundsEmbed)
                     else:
-                        logger.log(f'{message.author.display_name} has made their move for turn {turn} in {str(channel)}')
+                        await logger.log(f'{message.author.display_name} has made their move for turn {turn} in {str(channel)}', channel.guild)
                         await message.channel.send(':thumbsup:')
                         return [chosenNum, player]
 
-            if message.channel == channel and message.author == player:
-                content = message.content.lower()
-                if content == 'shutdown':
-                    if channel in category.channels:
-                        await self.shutdown(channel, role)
-                    return None
-
     #Deletes the channel and the role once the minigame is done or the game is manually exited
     async def shutdown(self, channel, role):
-        logger.log(f'{str(channel)} is shutting down')
+        await logger.log(f'{str(channel)} is shutting down', channel.guild)
         await role.delete()
         embed = discord.Embed(title='Shutting down...', colour=discord.Color.red())
         await channel.send(embed=embed)
