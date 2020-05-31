@@ -58,7 +58,11 @@ async def help(ctx):
     if ctx.message.channel.name != globalvars.COMMAND_CHANNEL_NAME:
         return
     if hasPermission(ctx.message.author):
-        await ctx.channel.send(embed=helpEmbed.modHelpEmbed())
+        player = ctx.message.author
+        await ctx.channel.send(embed=helpEmbed.regHelpEmbed())
+        if player.dm_channel is None:
+            await player.create_dm()
+        await player.dm_channel.send(embed=helpEmbed.modHelpEmbed())
         await logger.log(f'mod help command called by {ctx.message.author.display_name}', ctx.message.guild)
     else:
         await ctx.channel.send(embed=helpEmbed.regHelpEmbed())
