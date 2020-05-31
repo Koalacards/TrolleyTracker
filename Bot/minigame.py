@@ -77,9 +77,16 @@ class MiniGame:
 
         #Then, permissions are set so that the created role can send messages in the channel
         #The rest can read the messages if they want to to see how the game is going
-        await newChannel.set_permissions(guild.default_role, read_messages = True, send_messages = False)
-        await newChannel.set_permissions(author, read_messages = True, send_messages = True)
         await newChannel.set_permissions(self.client.user, read_messages = True, send_messages = True)
+        await newChannel.set_permissions(guild.default_role, read_messages = False, send_messages = False)
+        await newChannel.set_permissions(author, read_messages = True, send_messages = True)
+        try:
+            spectatorRole = discord.utils.get(guild.roles, name='spectator')
+            await newChannel.set_permissions(spectatorRole, read_messages=True, send_messages=False)
+        except:
+            await logger.log('The spectator role does not exist yet', guild)
+    
+
 
         #Send first message with a ping to direct the user to the channel
         await newChannel.send(f'Welcome, {author.mention}!')

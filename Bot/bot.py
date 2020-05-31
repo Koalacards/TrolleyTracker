@@ -124,6 +124,60 @@ async def invites(ctx):
     )
     await channel.send(embed=alreadyHaveRoleEmbed)
 '''  
+
+@client.command()
+async def spectate(ctx):
+    if ctx.message.channel.name != globalvars.COMMAND_CHANNEL_NAME:
+        return
+    author = ctx.message.author
+    guild = ctx.message.guild
+    for role in author.roles:
+        if str(role) == 'spectator':
+            alreadyHaveRoleEmbed = discord.Embed(
+                title=f'You already have the spectator role, {author.display_name}!',
+                colour=discord.Color.red()
+            )
+            await ctx.message.channel.send(embed=alreadyHaveRoleEmbed)
+            return
+    spectatorRole = None
+    for role in guild.roles:
+        if str(role) == 'spectator':
+            spectatorRole = role
+    #create the role if needed
+    if spectatorRole is None:
+        spectatorRole = await guild.create_role(name='spectator')
+    #add the role to the member
+    await author.add_roles(spectatorRole)
+    await logger.log(f'the spectator role has been added to {author.display_name}', guild)
+    embed=discord.Embed(
+        title=f'The spectator role has been added, {author.display_name}!\n Use `{globalvars.PREFIX}nospectate` to remove the spectator role.',
+        colour=discord.Color.green()
+    )
+    await ctx.message.channel.send(embed=embed)
+
+@client.command()
+async def nospectate(ctx):
+    if ctx.message.channel.name != globalvars.COMMAND_CHANNEL_NAME:
+        return
+    author = ctx.message.author
+    channel = ctx.message.channel
+    for role in author.roles:
+        if str(role) == 'spectator':
+            await author.remove_roles(role)
+            await logger.log(f'the spectator role has been removed from {author.display_name}', ctx.message.guild)
+            embed=discord.Embed(
+                title=f'The spectator role has been removed, {author.display_name}!\n Use `{globalvars.PREFIX}spectate` to re-add the spectator role.',
+                colour=discord.Color.green()
+            )
+            await channel.send(embed=embed)
+            return
+    alreadyHaveRoleEmbed = discord.Embed(
+        title=f'You already dont have the spectator role, {author.display_name}!',
+        colour=discord.Color.red()
+    )
+    await channel.send(embed=alreadyHaveRoleEmbed)
+
+
 @client.command()
 async def reset(ctx, channelName):
     await ctx.message.delete()

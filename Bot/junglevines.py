@@ -146,14 +146,14 @@ class JungleVines:
             if currentvine == self.vines:
                 await logger.log(f'{self.author.display_name} has won Jungle Vines in {str(newChannel)}', newChannel.guild)
                 await newChannel.send(embed=self.endingEmbed(currenttime, currentvine, totalbananas, True))
-                await asyncio.sleep(15)
+                await asyncio.sleep(globalvars.END_COOLDOWN_TIME)
                 await self.shutdown(newChannel, role)
                 return
 
             if currenttime == self.time:
                 await logger.log(f'{self.author.display_name} has lost Jungle Vines in {str(newChannel)}', newChannel.guild)
                 await newChannel.send(embed=self.endingEmbed(currenttime, currentvine, totalbananas, False))
-                await asyncio.sleep(15)
+                await asyncio.sleep(globalvars.END_COOLDOWN_TIME)
                 await self.shutdown(newChannel, role)
                 return
             
@@ -284,7 +284,7 @@ class JungleVines:
             description=description,
             colour=color
         )
-        embed.set_footer(text='This channel will delete itself in 15 seconds.')
+        embed.set_footer(text=f'This channel will delete itself in {globalvars.END_COOLDOWN_TIME} seconds.')
         return embed
 
     def updateVars(self, players, timeout, number):

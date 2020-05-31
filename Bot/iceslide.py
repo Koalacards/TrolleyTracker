@@ -50,7 +50,7 @@ class IceSlide:
             await player.dm_channel.send(embed=self.dmEmbed(player, currentrange))
 
         #the full game loop
-        while roundNum < self.rounds:
+        for _ in range(self.rounds - 1):
             #declare round-specific variables
             randomNum = random.randint(1, currentrange)
             barrelNums = self.genBarrelNums(math.ceil(currentrange / self.barrelFreqDivider), currentrange, randomNum)
@@ -122,7 +122,11 @@ class IceSlide:
             self.bullseyeMultiplier = currentrange
 
             #Sends out the embed for the round
-            await channel.send(embed=self.gameEmbed(roundNum, points, choices, pointsGained, whoGotBarrels, whoGotTNT, currentrange, randomNum))
+            roundMessage = await channel.send(embed=self.gameEmbed(roundNum, points, choices, pointsGained, whoGotBarrels, whoGotTNT, currentrange, randomNum))
+            for player in self.players:
+                if player.dm_channel is None:
+                    await player.create_dm()
+                await player.dm_channel.send(f'Last round\'s results: {roundMessage.jump_url}')
 
             #send the new dms unless it was the last turn
             if roundNum < self.rounds:
@@ -147,7 +151,7 @@ class IceSlide:
         for winners in winner:
             await logger.log(f'{winners.display_name} has won in channel {str(channel)}', channel.guild)
         await channel.send(embed=self.endingEmbed(points, winner))
-        await asyncio.sleep(15)
+        await asyncio.sleep(globalvars.END_COOLDOWN_TIME)
         await self.shutdown(channel, role)
         return
 
@@ -350,7 +354,7 @@ class IceSlide:
                 pointOrPoints = 'points'
             namesStrs.append(player.display_name)
             embed.add_field(name=f'{player.display_name}', value=f'{points[player]} {pointOrPoints}', inline=True)
-        embed.set_footer(text='This channel will delete itself after 15 seconds.')
+        embed.set_footer(text=f'This channel will delete itself in {globalvars.END_COOLDOWN_TIME} seconds.')
         embed.set_author(name=', '.join(namesStrs))
         return embed
 

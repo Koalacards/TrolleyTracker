@@ -95,7 +95,7 @@ class CannonGame:
             if xGuess >= self.xMin and xGuess <= self.xMax and yGuess >= self.yMin and yGuess <= self.yMax:
                 await logger.log(f'{self.author.display_name} has won cannongame in {str(channel)}', channel.guild)
                 await channel.send(embed=self.endingEmbed(attempt, xGuess, yGuess))
-                await asyncio.sleep(15)
+                await asyncio.sleep(globalvars.END_COOLDOWN_TIME)
                 await self.shutdown(channel, role)
                 gameOver = True
                 return
@@ -200,7 +200,7 @@ class CannonGame:
         )
         embed.add_field(name='Your final numbers:', value=f'Horizontal: {xguess}\nVertical: {yguess}', inline=False)
         embed.add_field(name='The bucket horizontal and vertical ranges:', value=f'Horizontal: {self.xMin} to {self.xMax}\nVertical: {self.yMin} to {self.yMax}', inline=False)
-        embed.set_footer(text='This channel will delete itself in 15 seconds.')
+        embed.set_footer(text=f'This channel will delete itself in {globalvars.END_COOLDOWN_TIME} seconds.')
         return embed
 
 

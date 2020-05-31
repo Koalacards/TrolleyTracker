@@ -2,7 +2,7 @@
 
 COMMAND_CHANNEL_NAME='trolley-commands'
 
-PREFIX = 'trolley '
+PREFIX = 't '
 
 JUNGLE_NUMS = []
 
@@ -16,7 +16,7 @@ MATCH_MINNIE_NUMS = []
 
 GAMES_LIST = ['junglevines', 'iceslide', 'tag', 'cannongame', 'matchminnie']
 
-EXTRA_PERMS = ['Moderators', 'KoalaBot']
+EXTRA_PERMS = ['Moderators']
 
 BAD_NUMS_AS_STR = ['69', '420', '911', '666']
 
@@ -34,3 +34,5 @@ LOGS_CHANNEL=None
 
 #number of games each user is allowed to be in
 NUM_GAMES_ALLOWED = 1
+
+END_COOLDOWN_TIME = 60

@@ -61,7 +61,7 @@ class Tag:
         
 
         #The full game loop
-        while turn < self.turns:
+        for _ in range(self.turns):
             #the number each person picks in each turn
             choices = {}
 
@@ -114,7 +114,11 @@ class Tag:
                 #reset vars
                 numRange = self.maxRange
                 #send the embed
-                await channel.send(embed=self.gameEmbed(cones, playerIt, turn, choices, conesGained, True, numRange))
+                roundMessage = await channel.send(embed=self.gameEmbed(cones, playerIt, turn, choices, conesGained, True, numRange))
+                for player in self.players:
+                    if player.dm_channel is None:
+                        await player.create_dm()
+                    await player.dm_channel.send(f'Last round\'s results: {roundMessage.jump_url}')
             else:
                 #find the player that is not it
                 playerNotIt = None
@@ -129,7 +133,13 @@ class Tag:
 
                 #half the range
                 numRange = int(numRange / 2)
-                await channel.send(embed=self.gameEmbed(cones, playerIt, turn, choices, conesGained, False, numRange))
+
+                #this round's message if the roles are not switched
+                roundMessage = await channel.send(embed=self.gameEmbed(cones, playerIt, turn, choices, conesGained, False, numRange))
+                for player in self.players:
+                    if player.dm_channel is None:
+                        await player.create_dm()
+                    await player.dm_channel.send(f'Last round\'s results: {roundMessage.jump_url}')
 
 
             #send the new dms unless it was the last turn
@@ -151,7 +161,7 @@ class Tag:
             elif cones[player] == winningNum and winner is not None:
                 winner = None
         await channel.send(embed=self.endingEmbed(cones, winner))
-        await asyncio.sleep(15)
+        await asyncio.sleep(globalvars.END_COOLDOWN_TIME)
         await self.shutdown(channel, role)
         return
 
@@ -297,7 +307,7 @@ class Tag:
                 coneOrCones = 'cones'
             namesStrs.append(player.display_name)
             embed.add_field(name=f'{player.display_name}', value=f'{cones[player]} ice cream {coneOrCones}', inline=True)
-        embed.set_footer(text='This channel will delete itself after 15 seconds.')
+        embed.set_footer(text=f'This channel will delete itself in {globalvars.END_COOLDOWN_TIME} seconds.')
         embed.set_author(name=', '.join(namesStrs))
         return embed
 
