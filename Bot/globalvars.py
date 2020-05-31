@@ -33,4 +33,4 @@ LOGS_CHANNEL_NAME='trolley-logs'
 LOGS_CHANNEL=None
 
 #number of games each user is allowed to be in
-NUM_GAMES_ALLOWED = 3
+NUM_GAMES_ALLOWED = 1
