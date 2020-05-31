@@ -79,6 +79,7 @@ class MiniGame:
         #The rest can read the messages if they want to to see how the game is going
         await newChannel.set_permissions(guild.default_role, read_messages = True, send_messages = False)
         await newChannel.set_permissions(author, read_messages = True, send_messages = True)
+        await newChannel.set_permissions(self.client.user, read_messages = True, send_messages = True)
 
         #Send first message with a ping to direct the user to the channel
         await newChannel.send(f'Welcome, {author.mention}!')
