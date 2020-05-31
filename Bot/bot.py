@@ -20,7 +20,7 @@ client.remove_command('help')
 
 @client.event
 async def on_ready():
-    print('TrolleyTracker v0.5.2')
+    print('TrolleyTracker v0.5.3')
 
 #This isnt supposed to do anything, this is exclusively to remove an error from the console
 @client.command()
@@ -64,6 +64,7 @@ async def help(ctx):
         await ctx.channel.send(embed=helpEmbed.regHelpEmbed())
         await logger.log(f'regular help command called by {ctx.message.author.display_name}', ctx.message.guild)
 
+'''
 @client.command()
 async def noinvites(ctx):
     if ctx.message.channel.name != globalvars.COMMAND_CHANNEL_NAME:
@@ -95,8 +96,8 @@ async def noinvites(ctx):
         colour=discord.Color.green()
     )
     await ctx.message.channel.send(embed=embed)
-
-
+'''
+'''
 @client.command()
 async def invites(ctx):
     if ctx.message.channel.name != globalvars.COMMAND_CHANNEL_NAME:
@@ -118,7 +119,7 @@ async def invites(ctx):
         colour=discord.Color.red()
     )
     await channel.send(embed=alreadyHaveRoleEmbed)
-    
+'''  
 @client.command()
 async def reset(ctx, channelName):
     await ctx.message.delete()

@@ -10,7 +10,7 @@ def regHelpEmbed():
     )
     embed.add_field(name='Single-Player Games:', value='-Jungle Vines\n-Cannon Game', inline=True)
     embed.add_field(name='Multi-Player Games:', value='-Tag (2 players)\n-Ice Slide (2-8 players)', inline=True)
-    embed.add_field(name='Other Commands:', value=f'-`{globalvars.PREFIX}noinvites`: Gives you the noinvites role, meaning that other people can\'t invite you to multiplayer games.\n-`{globalvars.PREFIX}invites`: Removes the noinvites role if you have it.\n-`{globalvars.PREFIX}suggest [message]`: Put any suggestion you have for the bot in here and it will be recorded!', inline=False)
+    embed.add_field(name='Other Commands:', value=f'-`{globalvars.PREFIX}suggest [message]`: Put any suggestion you have for the bot in here and it will be recorded!', inline=False)
     return embed
 
 
