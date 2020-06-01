@@ -28,6 +28,11 @@ async def invite(ctx, *, bs):
     #do nothing lol
     pass
 
+@client.command()
+async def ping(ctx):
+    await ctx.send("pong")
+    pass
+
 #Allow users to put in suggestions directly through the bot
 @client.command()
 async def suggest(ctx, *, suggestion):
