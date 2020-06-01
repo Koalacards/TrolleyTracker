@@ -30,6 +30,10 @@ class MiniGame:
         self.numPlayers = 1
 
     async def createChannel(self):
+        guild = self.context.message.guild
+
+        await logger.log("createChannel method started", guild)
+
         #Gets the correct game and list of numbers for the corresponding prefix
         if self.prefix == 'junglevines':
             self.game = JungleVines(self.context, self.client)
@@ -46,18 +50,29 @@ class MiniGame:
         elif self.prefix == 'matchminnie':
             self.game = MatchMinnie(self.context, self.client)
             self.numslist = globalvars.MATCH_MINNIE_NUMS
+        else:
+            await logger.log("something messed up in the prefix process", guild)
+            return
+            
+
+        await logger.log("made it past the prefix process", guild)
             
         
         #Gets the number for the game channel and role 
         self.number = self.getChannelNum()
+
+        await logger.log("made it past the channelNum process", guild)
 
         #Creating the name using junglevines-[a number with 4 digits], ex. junglevines-0123
         strnum = str(self.number)
         zeroesstrnum = strnum.zfill(4)
         channelRoleName = self.prefix + '-' + zeroesstrnum
 
-        guild = self.context.message.guild
+        await logger.log("made it past the roleName process", guild)
+
         author = self.players[0]
+
+        await logger.log("made it past the assign author process", guild)
 
         print('before channel initiation')
 
@@ -192,6 +207,7 @@ class MiniGame:
         num = random.randint(1, 9999)
         numStr = str(num)
         while (num in self.numslist or self.badNumStr(numStr) == True):
+            logger.log(f"number for new channel: {num}", self.context.guild)
             num = random.randint(1, 9999)
         self.numslist.append(num)
         return num
