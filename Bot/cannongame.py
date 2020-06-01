@@ -119,7 +119,7 @@ class CannonGame:
     #Deletes the channel and the role once the minigame is done or the game is manually exited
     async def shutdown(self, channel, role):
         await logger.log(f'{str(channel)} is shutting down', channel.guild)
-        await role.delete()
+        await self.author.remove_roles(role)
         embed = discord.Embed(title='Shutting down...', colour=discord.Color.red())
         await channel.send(embed=embed)
         await asyncio.sleep(2)

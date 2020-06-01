@@ -130,12 +130,20 @@ async def reset(ctx, channelName):
     if hasPermission(ctx.message.author):
         await logger.log(f'{ctx.message.author.display_name} has reset channel {channelName}', ctx.message.guild)
         guild = ctx.message.guild
+
+        '''
         for role in guild.roles:
             if str(role) == channelName:
                 await role.delete()
+        '''
 
+        tag = discord.utils.get(guild.roles, name='tag')
         for channel in guild.channels:
             if channel.name == channelName:
+                overrides = channel.overwrites
+                for overriddenMember in overrides.keys():
+                    if isinstance(overriddenMember, discord.Member) and tag in overriddenMember.roles:
+                        await overriddenMember.remove_roles(tag)
                 await channel.delete()
 
         number = int(channelName[-4:])
@@ -156,10 +164,16 @@ async def resetall(ctx):
     if hasPermission(ctx.message.author):
         await logger.log(f'{ctx.message.author.display_name} has reset all channels', ctx.message.guild)
         guild = ctx.message.guild
+
+        '''
         for role in guild.roles:
             for gameStr in globalvars.GAMES_LIST:
                 if gameStr in str(role):
                     await role.delete()
+        '''
+        role = discord.utils.get(guild.roles, name='tag')
+        for member in role.members:
+            await member.remove_roles(role)
         
         for channel in guild.channels:
             for gameStr in globalvars.GAMES_LIST:
@@ -305,9 +319,17 @@ async def on_message(message):
                 await message.channel.delete()
 
         
+        tag = discord.utils.get(guild.roles, name='tag')
+        overrides = message.channel.overwrites
+        for overriddenMember in overrides.keys():
+            if isinstance(overriddenMember, discord.Member) and tag in overriddenMember.roles:
+                await overriddenMember.remove_roles(tag)
+
+        '''
         for role in guild.roles:
             if str(role) == channelName:
                 await role.delete()
+        '''
 
     await client.process_commands(message)
 client.run(confidential.RUN_ID)

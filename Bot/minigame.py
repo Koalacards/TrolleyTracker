@@ -1,6 +1,7 @@
 import discord
 import random
 import asyncio
+import traceback
 
 from timeout import Timeout
 from junglevines import JungleVines
@@ -58,22 +59,31 @@ class MiniGame:
         guild = self.context.message.guild
         author = self.players[0]
 
-        #First, creating the role that the user will have (role is really only so that they cant
-        # make another game when they have it)
-        role = await guild.create_role(name=channelRoleName)
-        await author.add_roles(role)
-
-        await logger.log(f'new role {channelRoleName} has been created', guild)
-
+        print('before channel initiation')
 
         #Next, the channel is made in the category that they sent the message in
         newChannel = await guild.create_text_channel(
             name=channelRoleName,
             category=self.context.message.channel.category
         )
+        print('after channel initiation')
         category = newChannel.category
 
         await logger.log(f'new channel {channelRoleName} has been created', guild)
+
+        
+        #First, creating the role that the user will have (role is really only so that they cant
+        # make another game when they have it)
+        print('before role process')
+        #role = await guild.create_role(name=channelRoleName)
+        role = discord.utils.get(guild.roles, name='tag')
+
+        print('after role process')
+
+        await author.add_roles(role)
+
+        await logger.log(f'new role {channelRoleName} has been created', guild)
+        
 
         #Then, permissions are set so that the created role can send messages in the channel
         #The rest can read the messages if they want to to see how the game is going
@@ -249,7 +259,8 @@ class MiniGame:
 
     #Deletes the channel and the role
     async def shutdown(self, channel, role):
-        await role.delete()
+        for player in self.players:
+            await player.remove_roles(role)
         embed = discord.Embed(title='Shutting down...', colour=discord.Color.red())
         await channel.send(embed=embed)
         await asyncio.sleep(2)
