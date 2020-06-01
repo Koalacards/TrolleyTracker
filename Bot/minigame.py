@@ -59,7 +59,7 @@ class MiniGame:
             
         
         #Gets the number for the game channel and role 
-        self.number = self.getChannelNum()
+        self.number = await self.getChannelNum()
 
         await logger.log("made it past the channelNum process", guild)
 
@@ -202,12 +202,12 @@ class MiniGame:
         await self.game.game(newChannel, role)
         pass         
 
-    def getChannelNum(self):
+    async def getChannelNum(self):
         #Gets the random number for the channel
         num = random.randint(1, 9999)
         numStr = str(num)
         while (num in self.numslist or self.badNumStr(numStr) == True):
-            logger.log(f"number for new channel: {num}", self.context.guild)
+            await logger.log(f"number for new channel: {num}", self.context.guild)
             num = random.randint(1, 9999)
         self.numslist.append(num)
         return num
