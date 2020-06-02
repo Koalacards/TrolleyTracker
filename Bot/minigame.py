@@ -32,8 +32,6 @@ class MiniGame:
     async def createChannel(self):
         guild = self.context.message.guild
 
-        await logger.log("createChannel method started", guild)
-
         #Gets the correct game and list of numbers for the corresponding prefix
         if self.prefix == 'junglevines':
             self.game = JungleVines(self.context, self.client)
@@ -54,9 +52,6 @@ class MiniGame:
             await logger.log("something messed up in the prefix process", guild)
             return
             
-
-        await logger.log("made it past the prefix process", guild)
-            
         
         #Gets the number for the game channel and role 
         self.number = await self.getChannelNum()
@@ -68,11 +63,9 @@ class MiniGame:
         zeroesstrnum = strnum.zfill(4)
         channelRoleName = self.prefix + '-' + zeroesstrnum
 
-        await logger.log("made it past the roleName process", guild)
 
         author = self.players[0]
 
-        await logger.log("made it past the assign author process", guild)
 
         print('before channel initiation')
 
