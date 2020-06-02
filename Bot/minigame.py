@@ -206,9 +206,10 @@ class MiniGame:
         #Gets the random number for the channel
         num = random.randint(1, 9999)
         numStr = str(num)
-        while (num in self.numslist or self.badNumStr(numStr) == True):
+        while num in self.numslist or self.badNumStr(numStr) == True:
             await logger.log(f"number for new channel: {num}", self.context.guild)
             num = random.randint(1, 9999)
+            numStr = str(num)
         self.numslist.append(num)
         return num
     
