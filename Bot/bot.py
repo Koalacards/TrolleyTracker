@@ -15,7 +15,7 @@ TODO:Functionality that should be added:
     
 '''
 
-client = commands.Bot(command_prefix = globalvars.PREFIX, case_insensitive=True)
+client = commands.Bot(command_prefix = globalvars.PREFIXES, case_insensitive=True)
 client.remove_command('help')
 
 @client.event

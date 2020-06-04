@@ -2,7 +2,9 @@
 
 COMMAND_CHANNEL_NAME='trolley-commands'
 
-PREFIX = ('trolley ', 'Trolley ')
+PREFIX = 'trolley '
+
+PREFIXES = ('trolley ', 'Trolley ')
 
 JUNGLE_NUMS = []
 
