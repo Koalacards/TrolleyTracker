@@ -30,6 +30,8 @@ async def invite(ctx, *, bs):
 
 @client.command()
 async def ping(ctx):
+    if ctx.message.channel.name != globalvars.COMMAND_CHANNEL_NAME:
+        return
     await ctx.send("pong")
     pass
 
