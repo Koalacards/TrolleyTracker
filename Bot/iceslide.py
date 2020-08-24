@@ -50,7 +50,7 @@ class IceSlide:
             await player.dm_channel.send(embed=self.dmEmbed(player, currentrange))
 
         #the full game loop
-        while roundNum < self.rounds:
+        for _ in range(self.rounds - 1):
             #declare round-specific variables
             randomNum = random.randint(1, currentrange)
             barrelNums = self.genBarrelNums(math.ceil(currentrange / self.barrelFreqDivider), currentrange, randomNum)
@@ -121,8 +121,12 @@ class IceSlide:
             roundNum = roundNum + 1
             self.bullseyeMultiplier = currentrange
 
-            #Sends out the embed for the round
-            await channel.send(embed=self.gameEmbed(roundNum, points, choices, pointsGained, whoGotBarrels, whoGotTNT, currentrange, randomNum))
+            #Sends out the embed for the round, as well as a jump url in DM for the user to easily access
+            roundMessage = await channel.send(embed=self.gameEmbed(roundNum, points, choices, pointsGained, whoGotBarrels, whoGotTNT, currentrange, randomNum))
+            for player in self.players:
+                if player.dm_channel is None:
+                    await player.create_dm()
+                await player.dm_channel.send(f'Last round\'s results: {roundMessage.jump_url}')
 
             #send the new dms unless it was the last turn
             if roundNum < self.rounds:
@@ -147,7 +151,7 @@ class IceSlide:
         for winners in winner:
             await logger.log(f'{winners.display_name} has won in channel {str(channel)}', channel.guild)
         await channel.send(embed=self.endingEmbed(points, winner))
-        await asyncio.sleep(15)
+        await asyncio.sleep(globalvars.END_COOLDOWN_TIME)
         await self.shutdown(channel, role)
         return
 
@@ -237,7 +241,7 @@ class IceSlide:
     def startingEmbed(self):
         embed = discord.Embed(
             title='Welcome to Ice Slide!',
-            description=f'In order to start the game, all players must enter `start`!\n\nIn order to view rules, enter `rules`!\n\nIf you want to invite more players, enter `{globalvars.PREFIX}invite [USER]`!\n\nIf you want to leave, enter `shutdown`!',
+            description=f'In order to start the game, all players must enter `start`!\n\nIn order to view rules, enter `rules`!\n\nIf you want to invite more players, enter `{globalvars.PREFIX}invite [USER MENTION]` to invite by mention or `{globalvars.PREFIX}invite name [USER NAME]` to invite by name!\n\nIf you want to leave, enter `shutdown`!',
             colour=self.color
             )
         embed.set_footer(text=f'This channel will delete itself after {globalvars.SHUTDOWN_TIME_MINS} minutes if no more players have joined and the game has not started!')
@@ -351,7 +355,7 @@ class IceSlide:
                 pointOrPoints = 'points'
             namesStrs.append(player.display_name)
             embed.add_field(name=f'{player.display_name}', value=f'{points[player]} {pointOrPoints}', inline=True)
-        embed.set_footer(text='This channel will delete itself after 15 seconds.')
+        embed.set_footer(text=f'This channel will delete itself in {globalvars.END_COOLDOWN_TIME} seconds.')
         embed.set_author(name=', '.join(namesStrs))
         return embed
 

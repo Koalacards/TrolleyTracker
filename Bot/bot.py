@@ -35,6 +35,13 @@ async def ping(ctx):
     await ctx.send("pong")
     pass
 
+@client.command()
+async def pong(ctx):
+    if ctx.message.channel.name != globalvars.COMMAND_CHANNEL_NAME:
+        return
+    await ctx.send("ping")
+    pass
+
 #Allow users to put in suggestions directly through the bot
 @client.command()
 async def suggest(ctx, *, suggestion):
@@ -190,9 +197,16 @@ async def resetall(ctx):
         globalvars.TAG_NUMS = []
 
 @client.command()
-async def play(ctx, *, game):
+async def play(ctx, *, game:str=''):
     if ctx.message.channel.name != globalvars.COMMAND_CHANNEL_NAME:
         print(ctx.message.channel.name)
+        return
+    if game == '':
+        noGameSelectedEmbed = discord.Embed(
+            title=f'You must include the game you wish to play! For example, if you want to play the Cannon Game, type `trolley play cannon game`. If you would like to see the game options, type `trolley help`.',
+            colour=discord.Color.red()
+        )
+        await ctx.send(embed=noGameSelectedEmbed)
         return
     gamelower = game.lower()
     gamestripped = gamelower.strip()
@@ -287,7 +301,7 @@ def isInt(content):
 
 @client.event
 async def on_message(message):
-    if message.content == 'shutdown':
+    if message.content.lower() == 'shutdown':
         channelName = message.channel.name
         channelSplit = channelName.split('-')
         if len(channelSplit) != 2 or channelSplit[0] not in globalvars.GAMES_LIST or isInt(channelSplit[1]) == False:
