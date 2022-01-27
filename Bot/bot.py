@@ -14,8 +14,10 @@ TODO:Functionality that should be added:
         -an alternate way of doing this is making the channels non-read for players who arent inputting to the game
     
 '''
+intents = discord.Intents.default()
+intents.members=True
 
-client = commands.Bot(command_prefix = globalvars.PREFIXES, case_insensitive=True)
+client = commands.Bot(command_prefix = globalvars.PREFIXES, case_insensitive=True, intents=intents)
 client.remove_command('help')
 
 @client.event
