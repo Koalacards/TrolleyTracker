@@ -90,7 +90,7 @@ class MiniGame:
         # make another game when they have it)
         print('before role process')
         #role = await guild.create_role(name=channelRoleName)
-        '''
+        
         role = discord.utils.get(guild.roles, name='tag')
 
         print('after role process')
@@ -99,7 +99,7 @@ class MiniGame:
         
 
         await logger.log(f'new role {channelRoleName} has been created', guild)
-        '''
+        
         
         '''
         #Then, permissions are set so that the created role can send messages in the channel
