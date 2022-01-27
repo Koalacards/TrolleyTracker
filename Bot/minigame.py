@@ -360,9 +360,4 @@ class MiniGame:
 
     #Checks to see if a user is eligible to be a part of a 
     def numGamesPlaying(self, member):
-        count = 0
-        for role in member.roles:
-            for gameStr in globalvars.GAMES_LIST:
-                if gameStr in str(role):
-                    count = count + 1
-        return count
+        return 0
