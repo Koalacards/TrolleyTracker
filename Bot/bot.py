@@ -276,12 +276,15 @@ async def play(ctx, *, game:str=''):
 
 #Checks to see if a user is eligible to be a part of a 
 def numGamesPlaying(member):
+    '''
     count = 0
     for role in member.roles:
         for gameStr in globalvars.GAMES_LIST:
             if gameStr in str(role):
                 count = count + 1
     return count
+    '''
+    return 0
 
 #checks to see if the user that entered the command has permission to
 def hasPermission(member):
@@ -339,12 +342,13 @@ async def on_message(message):
             if gameStr in channelName:
                 await message.channel.delete()
 
-        
+        '''
         tag = discord.utils.get(guild.roles, name='tag')
         overrides = message.channel.overwrites
         for overriddenMember in overrides.keys():
             if isinstance(overriddenMember, discord.Member) and tag in overriddenMember.roles:
                 await overriddenMember.remove_roles(tag)
+        '''
 
         '''
         for role in guild.roles:

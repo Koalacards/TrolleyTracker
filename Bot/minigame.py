@@ -69,10 +69,16 @@ class MiniGame:
 
         print('before channel initiation')
 
+        overwrites = {
+            self.client.user: discord.PermissionOverwrite(read_messages = True, send_messages = True),
+            guild.default_role: discord.PermissionOverwrite(read_messages=False),
+            author: discord.PermissionOverwrite(read_messages = True, send_messages = True)
+        }
         #Next, the channel is made in the category that they sent the message in
         newChannel = await guild.create_text_channel(
             name=channelRoleName,
-            category=self.context.message.channel.category
+            category=self.context.message.channel.category,
+            overwrites=overwrites
         )
         print('after channel initiation')
         category = newChannel.category
@@ -84,20 +90,24 @@ class MiniGame:
         # make another game when they have it)
         print('before role process')
         #role = await guild.create_role(name=channelRoleName)
+        '''
         role = discord.utils.get(guild.roles, name='tag')
 
         print('after role process')
 
         await author.add_roles(role)
-
-        await logger.log(f'new role {channelRoleName} has been created', guild)
         
 
+        await logger.log(f'new role {channelRoleName} has been created', guild)
+        '''
+        
+        '''
         #Then, permissions are set so that the created role can send messages in the channel
         #The rest can read the messages if they want to to see how the game is going
         await newChannel.set_permissions(self.client.user, read_messages = True, send_messages = True)
         await newChannel.set_permissions(guild.default_role, read_messages = False, send_messages = False)
         await newChannel.set_permissions(author, read_messages = True, send_messages = True)
+        '''
 
         #Send first message with a ping to direct the user to the channel
         await newChannel.send(f'Welcome, {author.mention}!')
