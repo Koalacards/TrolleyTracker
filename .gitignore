@@ -10,6 +10,7 @@ __pycache__/
 confidential.py
 .vscode
 .idea
+*.db
 
 # Distribution / packaging
 .Python

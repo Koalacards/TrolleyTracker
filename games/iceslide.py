@@ -4,7 +4,7 @@ import asyncio
 import math
 import logger
 
-from timeout import Timeout
+from games.timeout import Timeout
 import globalvars
 
 

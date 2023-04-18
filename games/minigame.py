@@ -3,12 +3,12 @@ import random
 import asyncio
 import traceback
 
-from timeout import Timeout
-from junglevines import JungleVines
-from tag import Tag
-from iceslide import IceSlide
-from cannongame import CannonGame
-from matchminnie import MatchMinnie
+from games.timeout import Timeout
+from games.junglevines import JungleVines
+from games.tag import Tag
+from games.iceslide import IceSlide
+from games.cannongame import CannonGame
+from games.matchminnie import MatchMinnie
 import globalvars
 import logger
 
@@ -16,7 +16,7 @@ import logger
 #This class creates the channel for the minigame and waits for the game to start,
 #then passes the torch onto whatever game the player asked for.
 class MiniGame:
-    def __init__(self, context, client, prefix, minPlayers, maxPlayers):
+    def __init__(self, interaction:discord.Interaction, game_name:str):
         self.context = context
         self.client = client
         self.prefix = prefix
@@ -357,7 +357,3 @@ class MiniGame:
             if str(role) == 'noinvites':
                 return False
         return True
-
-    #Checks to see if a user is eligible to be a part of a 
-    def numGamesPlaying(self, member):
-        return 0

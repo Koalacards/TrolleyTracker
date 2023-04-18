@@ -2,7 +2,7 @@ import discord
 import random
 import asyncio
 
-from timeout import Timeout
+from games.timeout import Timeout
 import globalvars
 import logger
 
