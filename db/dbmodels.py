@@ -11,6 +11,8 @@ class BaseModel(Model):
 
 class ActiveGameChannels(BaseModel):
     channel_id = IntegerField(null=True)
+    game_data = TextField(null=True)
+    time = TextField(null=True)
 
     class Meta:
         table_name = 'ActiveGameChannels'

@@ -18,7 +18,7 @@ class PlayCommands(commands.Cog):
     async def play(self, interaction:discord.Interaction, game: Choice[int]):
         """Play a trolley game!"""
         await logger.log(f"New game: {game.name} created by {interaction.user.name}", self.client)
-        new_game = MiniGame(interaction, game.name)
+        new_game = MiniGame(interaction, self.client, game.name)
         await new_game.createChannel()
         await send(interaction, create_embed("Success!", f"You have created a game of {game.name}- check your pings in this category to see which channel you're in!", discord.Color.green()), view=url_view)
 

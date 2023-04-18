@@ -1,10 +1,13 @@
 import discord
+from discord.ext import commands
 import random
 import asyncio
 
 from games.timeout import Timeout
 import globalvars
 import logger
+
+from db.dbfunc import is_game_channel
 
 #Trolley game of JungleVines
 #-Players: 1
@@ -13,18 +16,17 @@ import logger
 #-Description: Fun game where you decide to make 1, 2, or 3 second jumps and get across
 #a number of vines in a certain period of time
 class JungleVines:
-    def __init__(self, context, client):
+    def __init__(self, interaction: discord.Interaction, client: commands.Bot):
         self.time = 50
-        self.context = context
+        self.interaction = interaction
         self.client = client
-        self.author = context.message.author
+        self.author = interaction.user
         self.vines = 15
-        self.number = 0
         self.to = Timeout(globalvars.SHUTDOWN_TIME)
         self.color = discord.Color.from_rgb(41, 171, 135)
 
     #All of the main game code for junglevines
-    async def game(self, newChannel, role):
+    async def play_game(self, channel: discord.TextChannel):
         #set up variables
         spider1 = random.randint(2, 4)
         bat1 = random.randint(5, 8)
@@ -33,7 +35,6 @@ class JungleVines:
         currentvine = 1
         currenttime = 0
         totalbananas = 0
-        category = newChannel.category
 
         bananas = {}
         for x in range(1, self.vines):
@@ -44,7 +45,7 @@ class JungleVines:
            bat2:random.randint(1, 3) 
         }
 
-        await newChannel.send(embed = self.gameEmbed(False, False, currentvine, currenttime, True, False, False, False, totalbananas, False))
+        await channel.send(embed = self.gameEmbed(False, False, currentvine, currenttime, True, False, False, False, totalbananas, False))
 
         while currentvine < self.vines and currenttime < self.time:
             #the number of seconds the move is going to take: either 1, 2, or 3
@@ -57,8 +58,8 @@ class JungleVines:
             
             while moveDone == False:
                 if self.to.isTimeUp():
-                    if newChannel in category.channels:
-                        await self.shutdown(newChannel, role)
+                    if is_game_channel(channel.id):
+                        await self.shutdown(channel)
                     return
                 message = None
                 try:
@@ -174,15 +175,13 @@ class JungleVines:
 
 
     #Deletes the channel and the role
-    async def shutdown(self, channel, role):
-        await logger.log(f'{str(channel)} is shutting down', channel.guild)
-        await self.author.remove_roles(role)
+    async def shutdown(self, channel):
+        await logger.log(f'{str(channel)} is shutting down', self.client)
         embed = discord.Embed(title='Shutting down...', colour=discord.Color.red())
         await channel.send(embed=embed)
         await asyncio.sleep(2)
         await channel.delete(reason='removing the game channel because the game is over or was forced to shutdown')
-        globalvars.JUNGLE_NUMS.remove(self.number)
-        return
+
 
     #The first "welcome to junglevines!" embed information
     def startingEmbed(self):

@@ -1,8 +1,9 @@
 import discord
+from discord.ext import commands
 import random
 import asyncio
-import traceback
 
+from db.dbfunc import add_game_channel, remove_game_channel
 from games.timeout import Timeout
 from games.junglevines import JungleVines
 from games.tag import Tag
@@ -16,58 +17,41 @@ import logger
 #This class creates the channel for the minigame and waits for the game to start,
 #then passes the torch onto whatever game the player asked for.
 class MiniGame:
-    def __init__(self, interaction:discord.Interaction, game_name:str):
-        self.context = context
+    def __init__(self, interaction:discord.Interaction, client: commands.Bot, game_name:str):
+        self.interaction = interaction
         self.client = client
-        self.prefix = prefix
-        self.minPlayers = minPlayers
-        self.maxPlayers = maxPlayers
-        self.players = [context.message.author]
-        self.number = 0
-        self.to = Timeout(globalvars.SHUTDOWN_TIME)
-        self.numslist = []
+        (self.minPlayers, self.maxPlayers) = globalvars.NUM_PLAYERS[game_name]
+        self.players = [interaction.user]
         self.game = None
         self.numPlayers = 1
+        self.game_name = game_name
 
     async def createChannel(self):
-        guild = self.context.message.guild
+        guild = self.interaction.guild
 
         #Gets the correct game and list of numbers for the corresponding prefix
-        if self.prefix == 'junglevines':
-            self.game = JungleVines(self.context, self.client)
-            self.numslist = globalvars.JUNGLE_NUMS
-        elif self.prefix == 'tag':
-            self.game = Tag(self.context, self.client)
-            self.numslist = globalvars.TAG_NUMS
-        elif self.prefix == 'iceslide':
-            self.game = IceSlide(self.context, self.client)
-            self.numslist = globalvars.ICE_SLIDE_NUMS
-        elif self.prefix == 'cannongame':
-            self.game = CannonGame(self.context, self.client)
-            self.numslist = globalvars.CANNON_NUMS
-        elif self.prefix == 'matchminnie':
-            self.game = MatchMinnie(self.context, self.client)
-            self.numslist = globalvars.MATCH_MINNIE_NUMS
+        if self.prefix == 'Jungle Vines':
+            self.game = JungleVines(self.interaction, self.client)
+        elif self.prefix == 'Tag':
+            self.game = Tag(self.interaction, self.client)
+        elif self.prefix == 'Ice Slide':
+            self.game = IceSlide(self.interaction, self.client)
+        elif self.prefix == 'Cannon Game':
+            self.game = CannonGame(self.interaction, self.client)
+        elif self.prefix == 'Match Minnie':
+            self.game = MatchMinnie(self.interaction, self.client)
         else:
-            await logger.log("something messed up in the prefix process", guild)
+            await logger.log("something messed up in the prefix process", self.client)
             return
             
         
         #Gets the number for the game channel and role 
-        self.number = await self.getChannelNum()
-
-        await logger.log("made it past the channelNum process", guild)
-
-        #Creating the name using junglevines-[a number with 4 digits], ex. junglevines-0123
-        strnum = str(self.number)
-        zeroesstrnum = strnum.zfill(4)
-        channelRoleName = self.prefix + '-' + zeroesstrnum
+        game_number = str(random.randint(1, 9999))
+        zeroesstrnum = game_number.zfill(4)
+        channel_name = self.game_name + '-' + zeroesstrnum
 
 
-        author = self.players[0]
-
-
-        print('before channel initiation')
+        author = self.interaction.user
 
         overwrites = {
             self.client.user: discord.PermissionOverwrite(read_messages = True, send_messages = True),
@@ -76,38 +60,15 @@ class MiniGame:
         }
         #Next, the channel is made in the category that they sent the message in
         newChannel = await guild.create_text_channel(
-            name=channelRoleName,
-            category=self.context.message.channel.category,
+            name=channel_name,
+            category=self.interaction.channel.category,
             overwrites=overwrites
         )
-        print('after channel initiation')
+        add_game_channel(newChannel.id)
+        to = Timeout(globalvars.SHUTDOWN_TIME, newChannel.id)
         category = newChannel.category
 
-        await logger.log(f'new channel {channelRoleName} has been created', guild)
-
-        
-        #First, creating the role that the user will have (role is really only so that they cant
-        # make another game when they have it)
-        print('before role process')
-        #role = await guild.create_role(name=channelRoleName)
-        
-        role = discord.utils.get(guild.roles, name='tag')
-
-        print('after role process')
-
-        await author.add_roles(role)
-        
-
-        await logger.log(f'new role {channelRoleName} has been created', guild)
-        
-        
-        '''
-        #Then, permissions are set so that the created role can send messages in the channel
-        #The rest can read the messages if they want to to see how the game is going
-        await newChannel.set_permissions(self.client.user, read_messages = True, send_messages = True)
-        await newChannel.set_permissions(guild.default_role, read_messages = False, send_messages = False)
-        await newChannel.set_permissions(author, read_messages = True, send_messages = True)
-        '''
+        await logger.log(f'new channel {channel_name} has been created', self.client)
 
         #Send first message with a ping to direct the user to the channel
         await newChannel.send(f'Welcome, {author.mention}!')
@@ -129,7 +90,7 @@ class MiniGame:
 
         #Wait until the user invites a player or 5 minutes have passed
         while self.numPlayers < self.minPlayers:
-            if self.to.isTimeUp():
+            if to.isTimeUp():
                 if newChannel in category.channels:
                     await self.shutdown(newChannel, role)
                 return
@@ -169,15 +130,15 @@ class MiniGame:
 
         #wait until all players have typed start
         while len(unreadyPlayers) > 0:
-            if self.to.isTimeUp():
+            if to.isTimeUp():
                 if newChannel in category.channels:
-                    await self.shutdown(newChannel, role)
+                    await self.shutdown(newChannel)
             message = None
             try:
                 message = await self.client.wait_for('message', timeout=globalvars.SHUTDOWN_TIME)
             except:
                 if newChannel in category.channels:
-                    await self.shutdown(newChannel, role)
+                    await self.shutdown(newChannel)
             if message.channel.id == newChannel.id and message.author in self.players:
                 content = message.content.lower()
                 if content == 'start':
@@ -208,29 +169,11 @@ class MiniGame:
                         unreadyPlayers.append(user)
                 else:
                     pass
-        self.to.resetTimer()
-        self.game.updateVars(self.players, self.to, self.number)
+        to.resetTimer()
+        self.game.updateVars(self.players, to, self.number)
         await logger.log(f'game sequence for {channelRoleName} has started', guild)
-        await self.game.game(newChannel, role)
+        await self.game.game(newChannel)
         pass         
-
-    async def getChannelNum(self):
-        #Gets the random number for the channel
-        num = random.randint(1, 9999)
-        numStr = str(num)
-        while num in self.numslist or self.badNumStr(numStr) == True:
-            await logger.log(f"number for new channel: {num}", self.context.guild)
-            num = random.randint(1, 9999)
-            numStr = str(num)
-        self.numslist.append(num)
-        return num
-    
-    #determines if the 4-digit number contains any part of a bad number
-    def badNumStr(self, numStr):
-        for badNum in globalvars.BAD_NUMS_AS_STR:
-            if badNum in numStr:
-                return True
-        return False
 
     #Checks to see that the message contains invites to users (not more than
     #the maximum). If so,
@@ -277,7 +220,7 @@ class MiniGame:
                 else:
                     #adds the player to the game and pings them
                     await logger.log(f'{member.display_name} has been invited to channel {str(channel)}', channel.guild)
-                    self.to.resetTimer()
+                    to.resetTimer()
                     self.players.append(member)
                     await member.add_roles(role)
                     await channel.set_permissions(member, read_messages = True, send_messages = True)     
@@ -330,7 +273,7 @@ class MiniGame:
                 else:
                     #adds the player to the game and pings them
                     await logger.log(f'{member.display_name} has been invited to channel {str(channel)}', channel.guild)
-                    self.to.resetTimer()
+                    to.resetTimer()
                     self.players.append(member)
                     await member.add_roles(role)
                     await channel.set_permissions(member, read_messages = True, send_messages = True)     
@@ -341,15 +284,13 @@ class MiniGame:
 
 
     #Deletes the channel and the role
-    async def shutdown(self, channel, role):
-        for player in self.players:
-            await player.remove_roles(role)
+    async def shutdown(self, channel: discord.TextChannel):
         embed = discord.Embed(title='Shutting down...', colour=discord.Color.red())
         await channel.send(embed=embed)
         await asyncio.sleep(2)
         await channel.delete(reason='removing the game channel because the game is over or was forced to shutdown')
-        self.numslist.remove(self.number)
-        return
+        remove_game_channel(channel.id)
+
     
     #Determines if a member is has the noinvites role
     def hasNoInvites(self, member):
