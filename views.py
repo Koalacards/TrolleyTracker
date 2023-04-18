@@ -12,7 +12,7 @@ invite_button = Button(
 support_button = Button(
     label="Discord Server",
     style=discord.ButtonStyle.url,
-    url="https://discord.gg/toontown",
+    url="https://discord.gg/5Jn32Upk4M",
 )
 
 github_button = Button(
